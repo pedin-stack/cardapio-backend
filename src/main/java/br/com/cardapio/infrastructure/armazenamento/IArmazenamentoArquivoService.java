@@ -35,6 +35,9 @@ public interface IArmazenamentoArquivoService {
      */
     void saveArquivo(String caminho, Path origem, String tipoConteudo);
 
+    /** Apaga o objeto (ex.: o vídeo original depois de virar HLS). Falha só gera log: nunca derruba o fluxo. */
+    void deleteArquivo(String caminho);
+
     /** URL pública do objeto (bucket público), ou {@code null} se o caminho for nulo. */
     String findUrlPublica(String caminho);
 }

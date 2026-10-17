@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class VideoTranscodificacaoServiceTest {
 
-    private final VideoTranscodificacaoService service = new VideoTranscodificacaoService(null, null);
+    private final VideoTranscodificacaoService service = new VideoTranscodificacaoService(null, null, null);
 
     {
         ReflectionTestUtils.setField(service, "ffmpeg", "ffmpeg");

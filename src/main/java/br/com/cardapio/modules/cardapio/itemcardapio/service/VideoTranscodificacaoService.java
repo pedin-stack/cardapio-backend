@@ -1,6 +1,7 @@
 package br.com.cardapio.modules.cardapio.itemcardapio.service;
 
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoArquivoService;
+import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoVideoService;
 import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -29,6 +29,7 @@ import java.util.stream.Stream;
  * <p>
  * Layout publicado (plano, sem subpastas): {@code .../hls/<uuid>/master.m3u8}, {@code v0.m3u8}, {@code v1.m3u8},
  * {@code v0_000.ts…}, {@code poster.jpg}. O {@code <uuid>} por envio torna os arquivos imutáveis (cache longo).
+ * O original chega pelo bucket do Supabase (upload assinado) e é apagado de lá no fim; o HLS fica no disco da VPS.
  * </p>
  */
 @Slf4j
@@ -37,12 +38,9 @@ import java.util.stream.Stream;
 public class VideoTranscodificacaoService implements IVideoTranscodificacaoService {
 
     private static final long TIMEOUT_MINUTOS = 10;
-    private static final Map<String, String> TIPOS = Map.of(
-            "m3u8", "application/vnd.apple.mpegurl",
-            "ts", "video/mp2t",
-            "jpg", "image/jpeg");
 
     private final IArmazenamentoArquivoService armazenamentoArquivoService;
+    private final IArmazenamentoVideoService armazenamentoVideoService;
     private final IItemCardapioRepository itemCardapioRepository;
 
     @Value("${app.video.ffmpeg}")
@@ -81,16 +79,22 @@ public class VideoTranscodificacaoService implements IVideoTranscodificacaoServi
 
             final String prefixo = caminhoOriginal.substring(0, caminhoOriginal.lastIndexOf('/') + 1)
                     + "hls/" + UUID.randomUUID() + "/";
-            publicarArquivos(saida, prefixo);
+            armazenamentoVideoService.saveHls(prefixo, saida);
 
             final int atualizados = itemCardapioRepository.updateVideoResultado(itemId, caminhoOriginal,
                     StatusVideo.PRONTO, prefixo + "master.m3u8", prefixo + "poster.jpg");
+            if (atualizados == 0) {
+                // O gestor trocou/removeu o vídeo (ou excluiu o item) enquanto o FFmpeg rodava: HLS órfão.
+                armazenamentoVideoService.deleteHls(prefixo + "master.m3u8");
+            }
             log.info("Vídeo do item {} transcodificado ({} s, áudio={}, aplicado={})", itemId, duracao, temAudio, atualizados > 0);
         } catch (final Exception ex) {
             log.error("Falha ao transcodificar o vídeo do item {}: {}", itemId, ex.getMessage(), ex);
             itemCardapioRepository.updateVideoResultado(itemId, caminhoOriginal, StatusVideo.ERRO, null, null);
         } finally {
             apagarPasta(pasta);
+            // O original só serve de entrada: com ou sem sucesso, sai do bucket (o gestor reenvia se der ERRO).
+            armazenamentoArquivoService.deleteArquivo(caminhoOriginal);
         }
     }
 
@@ -126,18 +130,6 @@ public class VideoTranscodificacaoService implements IVideoTranscodificacaoServi
                 "-var_stream_map", temAudio ? "v:0,a:0 v:1,a:1" : "v:0 v:1",
                 saida.resolve("v%v.m3u8").toString()));
         return comando;
-    }
-
-    private void publicarArquivos(final Path saida, final String prefixo) throws IOException {
-        try (Stream<Path> arquivos = Files.list(saida)) {
-            for (final Path arquivo : arquivos.toList()) {
-                final String nome = arquivo.getFileName().toString();
-                final String tipo = TIPOS.get(nome.substring(nome.lastIndexOf('.') + 1));
-                if (tipo != null) {
-                    armazenamentoArquivoService.saveArquivo(prefixo + nome, arquivo, tipo);
-                }
-            }
-        }
     }
 
     /** Executa e devolve a saída. A saída vai para arquivo (pipe cheio travaria o processo) e há timeout. */

@@ -2,6 +2,7 @@ package br.com.cardapio.modules.cardapio.itemcardapio.service;
 
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoArquivoService;
+import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoVideoService;
 import br.com.cardapio.infrastructure.armazenamento.SupabaseArmazenamentoService;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
@@ -13,6 +14,7 @@ import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.ItemCardapioRe
 import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.MidiaResponseDTO;
 import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.VideoResponseDTO;
 import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
+import br.com.cardapio.modules.cardapio.itemcardapio.event.VideoItemDescartadoEvent;
 import br.com.cardapio.modules.cardapio.itemcardapio.event.VideoItemEnviadoEvent;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
@@ -41,6 +43,7 @@ public class ItemCardapioService implements IItemCardapioService {
     private final ICategoriaRepository categoriaRepository;
     private final IRestauranteRepository restauranteRepository;
     private final IArmazenamentoArquivoService armazenamentoArquivoService;
+    private final IArmazenamentoVideoService armazenamentoVideoService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -86,7 +89,11 @@ public class ItemCardapioService implements IItemCardapioService {
     @Transactional
     public void deleteItemCardapioById(final UUID id, final UsuarioUserDetailsDTO usuarioLogado) {
         final UUID restauranteId = RestauranteLogadoUtil.findRestauranteIdOrThrow(usuarioLogado);
-        itemCardapioRepository.delete(findItemCardapioByIdOrThrow(id, restauranteId));
+        final ItemCardapio item = findItemCardapioByIdOrThrow(id, restauranteId);
+        if (item.getVideoHlsPath() != null) {
+            eventPublisher.publishEvent(new VideoItemDescartadoEvent(item.getVideoHlsPath()));
+        }
+        itemCardapioRepository.delete(item);
     }
 
     // ---- Helpers Privados ----
@@ -139,6 +146,9 @@ public class ItemCardapioService implements IItemCardapioService {
         if (Objects.equals(novo, item.getVideoOriginalPath())) {
             return;
         }
+        if (item.getVideoHlsPath() != null) {
+            eventPublisher.publishEvent(new VideoItemDescartadoEvent(item.getVideoHlsPath()));
+        }
         item.setVideoOriginalPath(novo);
         item.setVideoHlsPath(null);
         item.setVideoPosterPath(null);
@@ -169,8 +179,8 @@ public class ItemCardapioService implements IItemCardapioService {
                 new VideoResponseDTO(
                         item.getVideoStatus(),
                         item.getVideoOriginalPath(),
-                        armazenamentoArquivoService.findUrlPublica(item.getVideoHlsPath()),
-                        armazenamentoArquivoService.findUrlPublica(item.getVideoPosterPath())),
+                        armazenamentoVideoService.findUrlPublica(item.getVideoHlsPath()),
+                        armazenamentoVideoService.findUrlPublica(item.getVideoPosterPath())),
                 item.getAtualizadoEm());
     }
 }

@@ -12,12 +12,14 @@ import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteAtualizar
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteStatusRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.response.RestauranteResponseDTO;
+import br.com.cardapio.modules.core.restaurante.event.RestauranteExcluidoEvent;
 import br.com.cardapio.modules.core.restaurante.model.Restaurante;
 import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
 import br.com.cardapio.modules.core.usuario.model.Usuario;
 import br.com.cardapio.modules.core.usuario.repository.IUsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,6 +45,7 @@ public class RestauranteService implements IRestauranteService {
     private final IPerfilRepository perfilRepository;
     private final IArmazenamentoArquivoService armazenamentoArquivoService;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -125,6 +128,7 @@ public class RestauranteService implements IRestauranteService {
     @CacheEvict(value = RedisCacheConfig.CACHE_USER_DETAILS, allEntries = true)
     public void deleteRestauranteById(final UUID id) {
         restauranteRepository.delete(findRestauranteByIdOrThrow(id));
+        eventPublisher.publishEvent(new RestauranteExcluidoEvent(id));
     }
 
     // ---- Helpers Privados ----

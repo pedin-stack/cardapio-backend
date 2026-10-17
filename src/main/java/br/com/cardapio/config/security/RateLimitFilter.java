@@ -25,7 +25,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(final HttpServletRequest request) {
         final String path = request.getServletPath();
+        // /videos: o player pede dezenas de chunks por minuto e sem X-Device-ID; contado por IP, um wi-fi de
+        // restaurante (todos atrás do mesmo NAT) estouraria o limite e travaria os vídeos de todo mundo.
         return "OPTIONS".equalsIgnoreCase(request.getMethod())
+                || path.startsWith("/videos/")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/webjars/");

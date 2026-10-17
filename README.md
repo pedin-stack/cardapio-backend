@@ -7,39 +7,40 @@ Padrões: `conecta-backend-blueprint.md`; desvios em [`docs/adr/adr-0001-adocao-
 
 ## Subir
 
-1. **Supabase**: crie um projeto e um bucket **público** `cardapio-midias` (Storage). Em *Project Settings › API* copie a
-   URL e a `service_role` key. Se limitar MIME no bucket, libere `image/jpeg, image/png, image/webp, video/mp4,
-   video/quicktime, video/webm, application/vnd.apple.mpegurl, video/mp2t`.
+1. **Supabase** (só Storage): bucket **público** `cardapio-midias` com MIME `image/jpeg, image/png, image/webp,
+   video/mp4, video/quicktime, video/webm` e limite de 50 MB. Fotos ficam lá; o vídeo original passa por lá só até
+   virar HLS (depois é apagado) — o HLS fica no disco da API e é servido em `/videos/**`.
+   Em *Project Settings › API* copie a URL e a `service_role` key.
 2. `cp .env.example .env` e preencha (`SUPABASE_*`, `SUPER_ADMIN_*`, segredos).
 3. `docker compose up -d --build` → API em `http://localhost:8080`, Swagger em `/swagger-ui.html`.
 4. Entre no front com `SUPER_ADMIN_EMAIL`/`SUPER_ADMIN_SENHA` (criado no 1º boot).
 
-## Produção numa VPS com Caddy
+## Produção (VPS compartilhada, Caddy em container)
 
-O `docker-compose.prod.yml` não publica Postgres nem Redis, prende a API em `127.0.0.1`, limita CPU/RAM/logs
-e confia nos cabeçalhos `X-Forwarded-*` do Caddy.
+O `docker-compose.prod.yml` não publica Postgres nem Redis, limita CPU/RAM/logs, liga a API (`cardapio-api`) à rede
+do container do Caddy (`PROXY_NETWORK`) e confia nos cabeçalhos `X-Forwarded-*`. O front (Vercel) chama a API pela
+própria Vercel (rewrite em `/api/*`), então o cookie de login funciona sem domínio próprio.
 
-1. DNS: aponte `api.seudominio.com` (registro A) para o IP da VPS. O front deve ficar no mesmo domínio-pai
-   (ex.: `app.seudominio.com`), senão o cookie de login não é enviado.
-2. Na VPS: `git clone` deste repositório, `cp .env.example .env` e preencha com valores **novos** (segredo do JWT,
-   senhas do banco e do super admin), `CORS_ALLOWED_ORIGINS=https://app.seudominio.com` e as chaves do Supabase.
+1. Endereço: sem domínio, use sslip.io — `cardapio-api.<IP-com-hifens>.sslip.io` já resolve para a VPS.
+2. Na VPS, copie o código (repositório privado: `git archive HEAD | ssh root@VPS "tar -x -C /home/coelhovps/cardapio-backend"`),
+   crie o `.env` com valores **novos** (JWT, senhas, chaves do Supabase), `PROXY_NETWORK`, `VIDEO_URL_BASE=https://<api>/videos`
+   e `CORS_ALLOWED_ORIGINS=https://<front>.vercel.app`.
 3. `docker compose -f docker-compose.prod.yml up -d --build`
-4. No Caddyfile (normalmente `/etc/caddy/Caddyfile`), acrescente — o HTTPS é automático:
+4. Acrescente ao Caddyfile do Caddy existente (anexar com `cat >>`: o arquivo é montado por bind e editores que
+   recriam o arquivo quebram a montagem) e recarregue sem derrubar os outros sites:
 
    ```caddyfile
-   api.seudominio.com {
+   cardapio-api.169-58-57-18.sslip.io {
    	encode zstd gzip
-   	reverse_proxy 127.0.0.1:8080
+   	reverse_proxy cardapio-api:8080
    }
    ```
 
-   e recarregue sem derrubar os outros sites: `sudo systemctl reload caddy` (ou `caddy reload`).
-   Caddy em container? Veja o comentário `networks` no fim do `docker-compose.prod.yml` e use
-   `reverse_proxy cardapio-api-1:8080`.
-5. Conferir: `curl -I https://api.seudominio.com/swagger-ui.html` e `docker compose -f docker-compose.prod.yml logs -f api`.
+   `docker exec <caddy> caddy validate --config /etc/caddy/Caddyfile && docker exec <caddy> caddy reload --config /etc/caddy/Caddyfile`
+5. Conferir: `curl -I https://<api>/swagger-ui.html` e `docker compose -f docker-compose.prod.yml logs -f cardapio-api`.
 
-Atualizar: `git pull && docker compose -f docker-compose.prod.yml up -d --build api` (as migrations rodam no boot).
-Backup do banco: `docker compose -f docker-compose.prod.yml exec postgres pg_dump -U cardapio cardapio_db > backup.sql`.
+Atualizar: copiar o código de novo e `docker compose -f docker-compose.prod.yml up -d --build cardapio-api` (migrations rodam no boot).
+Backup do banco: `docker compose -f docker-compose.prod.yml exec cardapio-postgres pg_dump -U cardapio cardapio_db > backup.sql`.
 
 ## Desenvolvimento
 

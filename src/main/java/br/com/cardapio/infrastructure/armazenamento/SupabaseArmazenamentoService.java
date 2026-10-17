@@ -107,6 +107,16 @@ public class SupabaseArmazenamentoService implements IArmazenamentoArquivoServic
         }
     }
 
+    @Override
+    public void deleteArquivo(final String caminho) {
+        try {
+            validateCaminhoOrThrow(caminho);
+            restClient.delete().uri(objectPath("/object/", caminho)).retrieve().toBodilessEntity();
+        } catch (final RuntimeException ex) {
+            log.warn("Não foi possível apagar {} do storage: {}", caminho, ex.getMessage());
+        }
+    }
+
     /** Caminho já validado (sem chaves nem segmentos especiais): concatenar preserva as barras, que um path variable codificaria como %2F. */
     private String objectPath(final String base, final String caminho) {
         return base + bucket + "/" + caminho;

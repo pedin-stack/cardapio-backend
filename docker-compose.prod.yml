@@ -1,11 +1,13 @@
 # =====================================================================
-# Produção numa VPS compartilhada, atrás do Caddy.
+# Produção numa VPS compartilhada, atrás de um Caddy que roda em CONTAINER (ex.: o do AutoCare).
 #   docker compose -f docker-compose.prod.yml up -d --build
 #
-# - Postgres e Redis SEM portas publicadas: só a rede interna. (O Docker publica portas por cima do ufw.)
-# - API publicada só em 127.0.0.1: quem fala com a internet é o Caddy (HTTPS automático).
+# - Postgres e Redis SEM portas publicadas: só a rede interna. (O Docker publica portas por cima do firewall.)
+# - A API entra na rede do Caddy (PROXY_NETWORK) e fica publicada só em 127.0.0.1 (para checagens locais).
+# - Serviços com prefixo "cardapio-": numa rede compartilhada, nomes como "api" ou "postgres" colidiriam no DNS
+#   com os do outro sistema (o Caddy passaria a balancear para o serviço errado).
+# - Vídeos HLS num volume, servidos pela API em /videos/**. Fotos ficam no bucket do Supabase.
 # - Limites de CPU/RAM e de log para não disputar a máquina com o outro sistema.
-# - Sem container_name: os nomes ficam no escopo do projeto "cardapio" e não colidem com o outro sistema.
 # Variáveis: .env (copie de .env.example e preencha a seção de produção).
 # =====================================================================
 name: cardapio
@@ -19,7 +21,7 @@ x-log: &log
 
 services:
 
-  postgres:
+  cardapio-postgres:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
@@ -37,7 +39,7 @@ services:
     <<: *log
 
   # Só estado efêmero (rate limit e cache de sessão): sem persistência em disco e com teto de memória.
-  redis:
+  cardapio-redis:
     image: redis:7-alpine
     restart: unless-stopped
     command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
@@ -45,22 +47,26 @@ services:
     mem_limit: 128m
     <<: *log
 
-  api:
+  cardapio-api:
     build: .
     restart: unless-stopped
     depends_on:
-      postgres:
+      cardapio-postgres:
         condition: service_healthy
-      redis:
+      cardapio-redis:
         condition: service_started
-    # Só local: o Caddy faz o proxy. Se a 8080 já for do outro sistema, troque API_HOST_PORT (e o Caddyfile).
     ports:
-      - "127.0.0.1:${API_HOST_PORT:-8080}:8080"
+      - "127.0.0.1:${API_HOST_PORT:-8090}:8080"
+    networks:
+      - default
+      - proxy
+    volumes:
+      - videos:/data/videos
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cardapio_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://cardapio-postgres:5432/cardapio_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cardapio}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_HOST: cardapio-redis
       SPRING_DATA_REDIS_PORT: 6379
       # Atrás do Caddy: lê X-Forwarded-For/Proto (IP real no rate limit, https reconhecido).
       SERVER_FORWARD_HEADERS_STRATEGY: native
@@ -69,7 +75,7 @@ services:
       API_SECURITY_TOKEN_TIMEZONE: ${API_SECURITY_TOKEN_TIMEZONE:--03:00}
       # Em produção o site é HTTPS: o cookie de sessão só trafega cifrado.
       API_SECURITY_COOKIE_SECURE: ${API_SECURITY_COOKIE_SECURE:-true}
-      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:?defina CORS_ALLOWED_ORIGINS (ex. https://app.seudominio.com) no .env}"
+      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:?defina CORS_ALLOWED_ORIGINS (ex. https://seu-front.vercel.app) no .env}"
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-}
       SUPER_ADMIN_SENHA: ${SUPER_ADMIN_SENHA:-}
       SUPABASE_URL: ${SUPABASE_URL:?defina SUPABASE_URL no .env}
@@ -77,18 +83,20 @@ services:
       SUPABASE_BUCKET: ${SUPABASE_BUCKET:-cardapio-midias}
       VIDEO_DURACAO_MAXIMA_SEGUNDOS: ${VIDEO_DURACAO_MAXIMA_SEGUNDOS:-90}
       VIDEO_THREADS: ${VIDEO_THREADS:-1}
+      VIDEO_DIRETORIO: /data/videos
+      VIDEO_URL_BASE: "${VIDEO_URL_BASE:?defina VIDEO_URL_BASE (ex. https://api.seudominio.com/videos) no .env}"
       # Heap ≤ metade do limite do container: a outra metade fica para o FFmpeg, que roda no mesmo container.
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50 -XX:+ExitOnOutOfMemoryError"
     cpus: ${API_CPUS:-1.5}
     mem_limit: ${API_MEM_LIMIT:-1536m}
     <<: *log
-    # Caddy rodando em CONTAINER (e não direto na VPS)? Ligue a API à rede dele e use
-    # `reverse_proxy cardapio-api-1:8080` no Caddyfile. Descomente abaixo e o bloco `networks` do fim.
-    # networks: [default, caddy]
 
 volumes:
   postgres_data:
+  videos:
 
-# networks:
-#   caddy:
-#     external: true   # nome da rede do container do Caddy (docker network ls)
+networks:
+  # Rede onde está o container do Caddy (docker network ls). No Caddyfile: reverse_proxy cardapio-api:8080
+  proxy:
+    name: ${PROXY_NETWORK:?defina PROXY_NETWORK (rede do container do Caddy) no .env}
+    external: true

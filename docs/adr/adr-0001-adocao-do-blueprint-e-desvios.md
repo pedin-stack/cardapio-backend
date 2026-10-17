@@ -23,7 +23,9 @@ Seguir o blueprint, com os desvios abaixo:
 | 5 | Pacote **`infrastructure`** (grafia correta). | Projeto novo, sem legado. |
 | 6 | Cardápio público com **`Cache-Control: max-age=30`** em vez de cache Redis. | O DTO tem listas imutáveis (`Stream.toList()`) que o default typing do Jackson não desserializa; 30 s de atraso é aceitável. |
 | 7 | `Restaurante` mora no **Core** (rotas `/api/v1/core/restaurantes`, permissões `CORE_RESTAURANTE_*`). | Usuários e cardápio dependem dele: o dado comum não nasce no módulo que o usa primeiro. |
-| 8 | Sem `docker-compose.override/prod/test`: um compose lendo `.env`. | Um ambiente por enquanto; separar quando houver deploy. |
+| 8 | Dois composes: `docker-compose.yml` (dev) e `docker-compose.prod.yml` (VPS compartilhada, Caddy em container). | Um ambiente de produção; sem override/test. |
+| 9 | **Supabase só para fotos.** O vídeo original passa pelo bucket (upload assinado) e é apagado após virar HLS; o HLS fica num volume da VPS, servido pela API em `/videos/**`. | O plano gratuito do Supabase (1 GB de storage, 5 GB de tráfego) não comporta vídeo; a VPS tem disco e banda. |
+| 10 | Front na Vercel chama a API via **rewrite** (`/api/*` → VPS). | O cookie de sessão fica no domínio do front: funciona com `*.vercel.app` + `*.sslip.io`, sem domínio próprio. |
 
 ## Vídeo em chunks (HLS)
 
@@ -36,5 +38,6 @@ vídeo durante a transcodificação. O front toca com hls.js numa janela de no m
 ## Consequências
 
 - Recuperação de senha do gestor = o super admin define uma nova senha na edição do restaurante.
-- Vídeos antigos (HLS anterior a uma troca) ficam no bucket; limpeza é trabalho futuro.
+- HLS antigo sai do disco após o commit (vídeo trocado/removido, item ou restaurante excluído). Fotos órfãs no
+  bucket (item excluído) ainda não são limpas.
 - O FFmpeg roda no container da API: em escala, mover a transcodificação para um worker separado.

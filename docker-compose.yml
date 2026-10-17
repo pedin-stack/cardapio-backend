@@ -53,6 +53,10 @@ services:
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:?defina SUPABASE_SERVICE_KEY no .env}
       SUPABASE_BUCKET: ${SUPABASE_BUCKET:-cardapio-midias}
       VIDEO_DURACAO_MAXIMA_SEGUNDOS: ${VIDEO_DURACAO_MAXIMA_SEGUNDOS:-90}
+      VIDEO_URL_BASE: ${VIDEO_URL_BASE:-http://localhost:8080/videos}
+    volumes:
+      - videos:/data/videos
 
 volumes:
   postgres_data:
+  videos:

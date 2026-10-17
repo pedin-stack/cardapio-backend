@@ -2,11 +2,13 @@ package br.com.cardapio.modules.cardapio.itemcardapio.service;
 
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoArquivoService;
+import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoVideoService;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
 import br.com.cardapio.modules.cardapio.categoria.repository.ICategoriaRepository;
 import br.com.cardapio.modules.cardapio.itemcardapio.dto.request.ItemCardapioRequestDTO;
 import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
+import br.com.cardapio.modules.cardapio.itemcardapio.event.VideoItemDescartadoEvent;
 import br.com.cardapio.modules.cardapio.itemcardapio.event.VideoItemEnviadoEvent;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
@@ -48,6 +50,8 @@ class ItemCardapioServiceTest {
     private IRestauranteRepository restauranteRepository;
     @Mock
     private IArmazenamentoArquivoService armazenamentoArquivoService;
+    @Mock
+    private IArmazenamentoVideoService armazenamentoVideoService;
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
@@ -134,6 +138,8 @@ class ItemCardapioServiceTest {
 
         assertThat(existente.getVideoStatus()).isEqualTo(StatusVideo.SEM_VIDEO);
         assertThat(existente.getVideoHlsPath()).isNull();
+        // O HLS antigo sai do disco (depois do commit, pelo listener).
+        verify(eventPublisher).publishEvent(new VideoItemDescartadoEvent(PASTA + "videos/hls/x/master.m3u8"));
     }
 
     @Test

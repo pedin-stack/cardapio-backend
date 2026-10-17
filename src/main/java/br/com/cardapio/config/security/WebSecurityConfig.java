@@ -55,6 +55,8 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.PUT, CARDAPIO_PUBLICO + "/itens/item/*/curtida").permitAll()
                         .requestMatchers(HttpMethod.DELETE, CARDAPIO_PUBLICO + "/itens/item/*/curtida").permitAll()
                         .requestMatchers(HttpMethod.POST, CARDAPIO_PUBLICO + "/visualizacoes").permitAll()
+                        // Chunks HLS e pôsteres do feed público (servidos do disco pelo WebMvcConfig)
+                        .requestMatchers(HttpMethod.GET, "/videos/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtLoginFilter, UsernamePasswordAuthenticationFilter.class);

@@ -1,6 +1,7 @@
 package br.com.cardapio.modules.cardapio.publico.service;
 
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoArquivoService;
+import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoVideoService;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
 import br.com.cardapio.modules.cardapio.categoria.model.Categoria;
@@ -34,6 +35,7 @@ public class CardapioPublicoService implements ICardapioPublicoService {
     private final ICategoriaRepository categoriaRepository;
     private final IItemCardapioRepository itemCardapioRepository;
     private final IArmazenamentoArquivoService armazenamentoArquivoService;
+    private final IArmazenamentoVideoService armazenamentoVideoService;
 
     @Override
     @Transactional(readOnly = true)
@@ -77,7 +79,7 @@ public class CardapioPublicoService implements ICardapioPublicoService {
                 item.getCategorias().stream().map(Categoria::getId).toList(),
                 List.copyOf(item.getIngredientes()),
                 item.getImagens().stream().map(armazenamentoArquivoService::findUrlPublica).toList(),
-                videoPronto ? armazenamentoArquivoService.findUrlPublica(item.getVideoHlsPath()) : null,
-                videoPronto ? armazenamentoArquivoService.findUrlPublica(item.getVideoPosterPath()) : null);
+                videoPronto ? armazenamentoVideoService.findUrlPublica(item.getVideoHlsPath()) : null,
+                videoPronto ? armazenamentoVideoService.findUrlPublica(item.getVideoPosterPath()) : null);
     }
 }
