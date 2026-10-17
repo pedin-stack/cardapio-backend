@@ -1,0 +1,53 @@
+package br.com.cardapio.modules.cardapio.publico.dto.response;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Item no feed público. {@code videoHlsUrl} só vem quando a transcodificação terminou.
+ */
+@Schema(description = "Item do cardápio público")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record ItemPublicoResponseDTO(
+
+        @Schema(description = "Identificador")
+        @JsonProperty("id")
+        UUID id,
+
+        @Schema(description = "Nome", example = "Cappuccino italiano")
+        @JsonProperty("nome")
+        String nome,
+
+        @Schema(description = "Descrição")
+        @JsonProperty("descricao")
+        String descricao,
+
+        @Schema(description = "Valor em reais", example = "14.90")
+        @JsonProperty("valor")
+        BigDecimal valor,
+
+        @Schema(description = "Categorias do item")
+        @JsonProperty("categoriaIds")
+        List<UUID> categoriaIds,
+
+        @Schema(description = "Ingredientes")
+        @JsonProperty("ingredientes")
+        List<String> ingredientes,
+
+        @Schema(description = "URLs das imagens, na ordem do carrossel")
+        @JsonProperty("imagens")
+        List<String> imagens,
+
+        @Schema(description = "Playlist HLS mestre")
+        @JsonProperty("videoHlsUrl")
+        String videoHlsUrl,
+
+        @Schema(description = "Pôster do vídeo")
+        @JsonProperty("videoPosterUrl")
+        String videoPosterUrl
+) {}

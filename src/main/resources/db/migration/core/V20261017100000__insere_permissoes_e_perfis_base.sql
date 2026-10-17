@@ -1,0 +1,44 @@
+-- =====================================================================
+-- Core — catálogo de permissões e perfis fixos (UUID fixo, imutáveis).
+-- Super Administrador: plataforma (restaurantes) + upload de logo/capa.
+-- Gestor Restaurante: cardápio, mídia e métricas do próprio restaurante.
+-- O primeiro usuário Super Administrador é criado pelo SuperAdministradorDataLoader (nunca por migration).
+-- =====================================================================
+
+INSERT INTO public.permissao (nome) VALUES
+('CORE_RESTAURANTE_VISUALIZAR_TODOS'),
+('CORE_RESTAURANTE_CRIAR'),
+('CORE_RESTAURANTE_ATUALIZAR'),
+('CORE_RESTAURANTE_APAGAR'),
+('CORE_MIDIA_CRIAR'),
+('CARDAPIO_CATEGORIA_VISUALIZAR_PROPRIAS'),
+('CARDAPIO_CATEGORIA_CRIAR'),
+('CARDAPIO_CATEGORIA_ATUALIZAR'),
+('CARDAPIO_CATEGORIA_APAGAR'),
+('CARDAPIO_ITEM_VISUALIZAR_PROPRIOS'),
+('CARDAPIO_ITEM_CRIAR'),
+('CARDAPIO_ITEM_ATUALIZAR'),
+('CARDAPIO_ITEM_APAGAR'),
+('CARDAPIO_METRICA_VISUALIZAR_PROPRIAS')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public.perfis (id, nome, descricao, modulo, imutavel) VALUES
+('5b0c1d2e-0000-4000-8000-000000000001', 'Super Administrador', 'Gerencia os restaurantes da plataforma.', 'CORE', true),
+('5b0c1d2e-0000-4000-8000-000000000002', 'Gestor Restaurante', 'Gerencia o cardápio e vê as métricas do próprio restaurante.', 'CARDAPIO', true);
+
+INSERT INTO public.perfil_permissoes (perfil_id, permissao) VALUES
+('5b0c1d2e-0000-4000-8000-000000000001', 'CORE_RESTAURANTE_VISUALIZAR_TODOS'),
+('5b0c1d2e-0000-4000-8000-000000000001', 'CORE_RESTAURANTE_CRIAR'),
+('5b0c1d2e-0000-4000-8000-000000000001', 'CORE_RESTAURANTE_ATUALIZAR'),
+('5b0c1d2e-0000-4000-8000-000000000001', 'CORE_RESTAURANTE_APAGAR'),
+('5b0c1d2e-0000-4000-8000-000000000001', 'CORE_MIDIA_CRIAR'),
+('5b0c1d2e-0000-4000-8000-000000000002', 'CORE_MIDIA_CRIAR'),
+('5b0c1d2e-0000-4000-8000-000000000002', 'CARDAPIO_CATEGORIA_VISUALIZAR_PROPRIAS'),
+('5b0c1d2e-0000-4000-8000-000000000002', 'CARDAPIO_CATEGORIA_CRIAR'),
+('5b0c1d2e-0000-4000-8000-000000000002', 'CARDAPIO_CATEGORIA_ATUALIZAR'),
+('5b0c1d2e-0000-4000-8000-000000000002', 'CARDAPIO_CATEGORIA_APAGAR'),
+('5b0c1d2e-0000-4000-8000-000000000002', 'CARDAPIO_ITEM_VISUALIZAR_PROPRIOS'),
+('5b0c1d2e-0000-4000-8000-000000000002', 'CARDAPIO_ITEM_CRIAR'),
+('5b0c1d2e-0000-4000-8000-000000000002', 'CARDAPIO_ITEM_ATUALIZAR'),
+('5b0c1d2e-0000-4000-8000-000000000002', 'CARDAPIO_ITEM_APAGAR'),
+('5b0c1d2e-0000-4000-8000-000000000002', 'CARDAPIO_METRICA_VISUALIZAR_PROPRIAS');
