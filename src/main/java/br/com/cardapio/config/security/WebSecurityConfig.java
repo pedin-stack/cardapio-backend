@@ -30,6 +30,7 @@ public class WebSecurityConfig {
     /** Rota pública do cardápio de um restaurante e seus sub-recursos (curtida, visualizações). */
     private static final String CARDAPIO_PUBLICO = "/api/v1/cardapio/restaurantes/restaurante/*";
 
+    private final FrontendOrigemFilter frontendOrigemFilter;
     private final JWTLoginFilter jwtLoginFilter;
     private final RateLimitFilter rateLimitFilter;
 
@@ -58,6 +59,8 @@ public class WebSecurityConfig {
                         // Chunks HLS e pôsteres do feed público (servidos do disco pelo WebMvcConfig)
                         .requestMatchers(HttpMethod.GET, "/videos/**").permitAll()
                         .anyRequest().authenticated())
+                // Ordem: 1º só o front passa → 2º rate limit → 3º JWT.
+                .addFilterBefore(frontendOrigemFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtLoginFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -19,7 +19,14 @@ Padrões: `conecta-backend-blueprint.md`; desvios em [`docs/adr/adr-0001-adocao-
 
 O `docker-compose.prod.yml` não publica Postgres nem Redis, limita CPU/RAM/logs, liga a API (`cardapio-api`) à rede
 do container do Caddy (`PROXY_NETWORK`) e confia nos cabeçalhos `X-Forwarded-*`. O front (Vercel) chama a API pela
-própria Vercel (rewrite em `/api/*`), então o cookie de login funciona sem domínio próprio.
+própria Vercel (middleware em `/api/*`), então o cookie de login funciona sem domínio próprio.
+
+**Quem acessa o quê em produção:**
+- `/api/*` só com o segredo `X-Cardapio-Front` que o middleware do front injeta (`FRONT_SEGREDO` aqui =
+  `API_SEGREDO_FRONT` na Vercel); sem ele, 403. `/videos/**` é público (o player baixa direto). Swagger desligado.
+- Postgres: o [`deploy/postgres/pg_hba.conf`](deploy/postgres/pg_hba.conf) só aceita, pela rede, o IP fixo da API
+  (`172.29.89.10`); fora isso, só o socket local — `docker exec -it cardapio-cardapio-postgres-1 psql -U cardapio cardapio_db`.
+- Redis com senha (`REDIS_PASSWORD`). Use só letras e números nos segredos do `.env` (o compose interpreta `$`).
 
 1. Endereço: sem domínio, use sslip.io — `cardapio-api.<IP-com-hifens>.sslip.io` já resolve para a VPS.
 2. Na VPS, copie o código (repositório privado: `git archive HEAD | ssh root@VPS "tar -x -C /home/coelhovps/cardapio-backend"`),

@@ -2,7 +2,10 @@
 # Produção numa VPS compartilhada, atrás de um Caddy que roda em CONTAINER (ex.: o do AutoCare).
 #   docker compose -f docker-compose.prod.yml up -d --build
 #
-# - Postgres e Redis SEM portas publicadas: só a rede interna. (O Docker publica portas por cima do firewall.)
+# - Postgres e Redis SEM portas publicadas: só a rede "interno". (O Docker publica portas por cima do firewall.)
+# - Banco: o pg_hba.conf (deploy/postgres) só aceita, pela rede, o IP fixo da API; fora isso, só socket local
+#   (docker exec = root). Redis com senha. Nenhum outro processo/container da VPS entra, mesmo alcançando a porta.
+# - API: /api/* só com o segredo que o middleware do front (Vercel) injeta (FRONT_SEGREDO); Swagger desligado.
 # - A API entra na rede do Caddy (PROXY_NETWORK) e fica publicada só em 127.0.0.1 (para checagens locais).
 # - Serviços com prefixo "cardapio-": numa rede compartilhada, nomes como "api" ou "postgres" colidiriam no DNS
 #   com os do outro sistema (o Caddy passaria a balancear para o serviço errado).
@@ -24,12 +27,17 @@ services:
   cardapio-postgres:
     image: postgres:17-alpine
     restart: unless-stopped
+    # hba_file fora do PGDATA: a regra de acesso vem do repositório e vale mesmo com o banco já inicializado.
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
     environment:
       POSTGRES_DB: cardapio_db
       POSTGRES_USER: ${DB_USER:-cardapio}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env}
+    networks:
+      - interno
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cardapio} -d cardapio_db"]
       interval: 10s
@@ -42,7 +50,13 @@ services:
   cardapio-redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    # Senha obrigatória: o cache de sessão guarda o hash das senhas dos usuários. Vai num arquivo privado do container
+    # e não como argumento (argumentos aparecem no `ps` da VPS para qualquer usuário); o `exec` deixa o Redis como PID 1.
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?defina REDIS_PASSWORD no .env}
+    command: ["sh", "-c", "umask 077 && printf 'requirepass %s\\n' \"$$REDIS_PASSWORD\" > /tmp/redis.conf && exec redis-server /tmp/redis.conf --save '' --appendonly no --maxmemory 64mb --maxmemory-policy allkeys-lru"]
+    networks:
+      - interno
     cpus: 0.5
     mem_limit: 128m
     <<: *log
@@ -58,8 +72,10 @@ services:
     ports:
       - "127.0.0.1:${API_HOST_PORT:-8090}:8080"
     networks:
-      - default
-      - proxy
+      interno:
+        # IP fixo: é o único endereço que o pg_hba.conf aceita pela rede.
+        ipv4_address: 172.29.89.10
+      proxy: {}
     volumes:
       - videos:/data/videos
     environment:
@@ -68,6 +84,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       SPRING_DATA_REDIS_HOST: cardapio-redis
       SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # Só o front fala com /api/*: mesmo valor de API_SEGREDO_FRONT nas variáveis da Vercel.
+      FRONT_SEGREDO: ${FRONT_SEGREDO:?defina FRONT_SEGREDO (o mesmo de API_SEGREDO_FRONT na Vercel) no .env}
+      SWAGGER_HABILITADO: "false"
       # Atrás do Caddy: lê X-Forwarded-For/Proto (IP real no rate limit, https reconhecido).
       SERVER_FORWARD_HEADERS_STRATEGY: native
       API_SECURITY_TOKEN_SECRET: ${API_SECURITY_TOKEN_SECRET:?defina API_SECURITY_TOKEN_SECRET no .env}
@@ -96,6 +116,11 @@ volumes:
   videos:
 
 networks:
+  # Só do Cardápio: API, Postgres e Redis. Faixa fixa para a API ter IP fixo (ver deploy/postgres/pg_hba.conf).
+  interno:
+    ipam:
+      config:
+        - subnet: 172.29.89.0/28
   # Rede onde está o container do Caddy (docker network ls). No Caddyfile: reverse_proxy cardapio-api:8080
   proxy:
     name: ${PROXY_NETWORK:?defina PROXY_NETWORK (rede do container do Caddy) no .env}

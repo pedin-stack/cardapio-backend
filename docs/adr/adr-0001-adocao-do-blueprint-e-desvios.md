@@ -25,7 +25,8 @@ Seguir o blueprint, com os desvios abaixo:
 | 7 | `Restaurante` mora no **Core** (rotas `/api/v1/core/restaurantes`, permissões `CORE_RESTAURANTE_*`). | Usuários e cardápio dependem dele: o dado comum não nasce no módulo que o usa primeiro. |
 | 8 | Dois composes: `docker-compose.yml` (dev) e `docker-compose.prod.yml` (VPS compartilhada, Caddy em container). | Um ambiente de produção; sem override/test. |
 | 9 | **Supabase só para fotos.** O vídeo original passa pelo bucket (upload assinado) e é apagado após virar HLS; o HLS fica num volume da VPS, servido pela API em `/videos/**`. | O plano gratuito do Supabase (1 GB de storage, 5 GB de tráfego) não comporta vídeo; a VPS tem disco e banda. |
-| 10 | Front na Vercel chama a API via **rewrite** (`/api/*` → VPS). | O cookie de sessão fica no domínio do front: funciona com `*.vercel.app` + `*.sslip.io`, sem domínio próprio. |
+| 10 | Front na Vercel chama a API via **middleware** (`/api/*` → VPS). | O cookie de sessão fica no domínio do front: funciona com `*.vercel.app` + `*.sslip.io`, sem domínio próprio. |
+| 11 | `/api/*` exige o segredo `X-Cardapio-Front` (injetado pelo middleware do front); Postgres só aceita a API (IP fixo no `pg_hba.conf`) e o socket local; Redis com senha; Swagger desligado em produção. | CORS só restringe navegadores; a API e o banco não devem atender nenhuma outra origem, nem processos da própria VPS. |
 
 ## Vídeo em chunks (HLS)
 
