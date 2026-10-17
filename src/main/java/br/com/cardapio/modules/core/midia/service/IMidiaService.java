@@ -25,7 +25,7 @@ public interface IMidiaService {
      *
      * @param dto           tipo do arquivo
      * @param usuarioLogado define a pasta: a do restaurante (gestor) ou a da plataforma (super admin)
-     * @return caminho, token e URL pública
+     * @return caminho e token
      * @throws BusinessException {@code TIPO_ARQUIVO_NAO_SUPORTADO} (400) ou {@code STORAGE_FAILED} (500)
      */
     UploadAssinadoResponseDTO saveUploadAssinado(UploadAssinadoRequestDTO dto, UsuarioUserDetailsDTO usuarioLogado);

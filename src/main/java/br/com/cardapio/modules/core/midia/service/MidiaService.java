@@ -48,6 +48,6 @@ public class MidiaService implements IMidiaService {
         final String caminho = pasta + subpasta + UUID.randomUUID() + "." + extensao;
 
         final String token = armazenamentoArquivoService.createUploadToken(caminho);
-        return new UploadAssinadoResponseDTO(caminho, token, armazenamentoArquivoService.findUrlPublica(caminho));
+        return new UploadAssinadoResponseDTO(caminho, token);
     }
 }

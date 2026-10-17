@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -50,9 +51,11 @@ public class ItemCardapioService implements IItemCardapioService {
     @Transactional(readOnly = true)
     public List<ItemCardapioResponseDTO> findAllItensCardapio(final UsuarioUserDetailsDTO usuarioLogado) {
         final UUID restauranteId = RestauranteLogadoUtil.findRestauranteIdOrThrow(usuarioLogado);
-        return itemCardapioRepository.findByRestauranteIdOrderByOrdemAscNomeAsc(restauranteId).stream()
-                .map(this::mapToItemCardapioResponseDTO)
-                .toList();
+        final List<ItemCardapio> itens = itemCardapioRepository.findByRestauranteIdOrderByOrdemAscNomeAsc(restauranteId);
+        // Fotos de todos os itens numa só assinatura (bucket privado).
+        final Map<String, String> urls = armazenamentoArquivoService.findUrlsAssinadas(
+                itens.stream().flatMap(item -> item.getImagens().stream()).toList());
+        return itens.stream().map(item -> mapToItemCardapioResponseDTO(item, urls)).toList();
     }
 
     @Override
@@ -161,6 +164,11 @@ public class ItemCardapioService implements IItemCardapioService {
     // ---- Mappers Privados ----
 
     private ItemCardapioResponseDTO mapToItemCardapioResponseDTO(final ItemCardapio item) {
+        return mapToItemCardapioResponseDTO(item, armazenamentoArquivoService.findUrlsAssinadas(item.getImagens()));
+    }
+
+    /** {@code urls}: caminho → URL assinada das fotos (bucket privado), já resolvidas em lote. */
+    private ItemCardapioResponseDTO mapToItemCardapioResponseDTO(final ItemCardapio item, final Map<String, String> urls) {
         return new ItemCardapioResponseDTO(
                 item.getId(),
                 item.getNome(),
@@ -174,7 +182,7 @@ public class ItemCardapioService implements IItemCardapioService {
                         .toList(),
                 List.copyOf(item.getIngredientes()),
                 item.getImagens().stream()
-                        .map(caminho -> new MidiaResponseDTO(caminho, armazenamentoArquivoService.findUrlPublica(caminho)))
+                        .map(caminho -> new MidiaResponseDTO(caminho, urls.get(caminho)))
                         .toList(),
                 new VideoResponseDTO(
                         item.getVideoStatus(),

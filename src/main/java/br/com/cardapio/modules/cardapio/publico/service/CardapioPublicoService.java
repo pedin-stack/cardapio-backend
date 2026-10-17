@@ -19,7 +19,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -43,9 +46,16 @@ public class CardapioPublicoService implements ICardapioPublicoService {
         final Restaurante restaurante = restauranteRepository.findBySlugAndAtivoTrue(slug)
                 .orElseThrow(() -> new BusinessException(BusinessExceptionMessage.SERVICO_INDISPONIVEL.getMessage()));
 
-        final List<ItemPublicoResponseDTO> itens = itemCardapioRepository
-                .findByRestauranteIdAndAtivoTrueOrderByOrdemAscNomeAsc(restaurante.getId()).stream()
-                .map(this::mapToItemPublicoResponseDTO)
+        final List<ItemCardapio> ativos = itemCardapioRepository.findByRestauranteIdAndAtivoTrueOrderByOrdemAscNomeAsc(restaurante.getId());
+        // Bucket privado: logo, capa e todas as fotos numa só assinatura (cacheada no Redis por 12 h).
+        final List<String> caminhos = new ArrayList<>();
+        caminhos.add(restaurante.getLogoPath());
+        caminhos.add(restaurante.getCapaPath());
+        ativos.forEach(item -> caminhos.addAll(item.getImagens()));
+        final Map<String, String> urls = armazenamentoArquivoService.findUrlsAssinadas(caminhos);
+
+        final List<ItemPublicoResponseDTO> itens = ativos.stream()
+                .map(item -> mapToItemPublicoResponseDTO(item, urls))
                 .toList();
 
         // Chip de categoria vazia levaria a um feed vazio: só entram categorias com algum item ativo.
@@ -60,8 +70,8 @@ public class CardapioPublicoService implements ICardapioPublicoService {
                         restaurante.getNome(),
                         restaurante.getSlug(),
                         restaurante.getDescricao(),
-                        armazenamentoArquivoService.findUrlPublica(restaurante.getLogoPath()),
-                        armazenamentoArquivoService.findUrlPublica(restaurante.getCapaPath())),
+                        restaurante.getLogoPath() != null ? urls.get(restaurante.getLogoPath()) : null,
+                        restaurante.getCapaPath() != null ? urls.get(restaurante.getCapaPath()) : null),
                 categorias.stream()
                         .filter(categoria -> categoriasComItens.contains(categoria.getId()))
                         .map(CategoriaService::mapToCategoriaResponseDTO)
@@ -69,7 +79,7 @@ public class CardapioPublicoService implements ICardapioPublicoService {
                 itens);
     }
 
-    private ItemPublicoResponseDTO mapToItemPublicoResponseDTO(final ItemCardapio item) {
+    private ItemPublicoResponseDTO mapToItemPublicoResponseDTO(final ItemCardapio item, final Map<String, String> urls) {
         final boolean videoPronto = item.getVideoStatus() == StatusVideo.PRONTO;
         return new ItemPublicoResponseDTO(
                 item.getId(),
@@ -78,7 +88,8 @@ public class CardapioPublicoService implements ICardapioPublicoService {
                 item.getValor(),
                 item.getCategorias().stream().map(Categoria::getId).toList(),
                 List.copyOf(item.getIngredientes()),
-                item.getImagens().stream().map(armazenamentoArquivoService::findUrlPublica).toList(),
+                // Foto que falhou ao assinar fica de fora (o carrossel mostra as outras).
+                item.getImagens().stream().map(urls::get).filter(Objects::nonNull).toList(),
                 videoPronto ? armazenamentoVideoService.findUrlPublica(item.getVideoHlsPath()) : null,
                 videoPronto ? armazenamentoVideoService.findUrlPublica(item.getVideoPosterPath()) : null);
     }

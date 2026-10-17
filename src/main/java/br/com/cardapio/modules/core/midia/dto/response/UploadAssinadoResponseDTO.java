@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Destino e token do upload assinado ({@code supabase.storage.from(bucket).uploadToSignedUrl(caminho, token, arquivo)}).
+ * Não traz URL de leitura: o bucket é privado e o arquivo ainda não existe — a prévia no front usa o arquivo local,
+ * e as respostas de item/restaurante trazem URLs assinadas depois de salvo.
  */
 @Schema(description = "Upload assinado")
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -18,9 +20,5 @@ public record UploadAssinadoResponseDTO(
 
         @Schema(description = "Token de uso único do upload")
         @JsonProperty("token")
-        String token,
-
-        @Schema(description = "URL pública do arquivo depois de enviado")
-        @JsonProperty("urlPublica")
-        String urlPublica
+        String token
 ) {}

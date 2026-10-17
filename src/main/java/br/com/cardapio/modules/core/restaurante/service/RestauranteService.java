@@ -26,8 +26,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * CRUD de restaurantes. Toda mutação limpa o cache {@code userDetails}: o status do restaurante
@@ -50,8 +54,12 @@ public class RestauranteService implements IRestauranteService {
     @Override
     @Transactional(readOnly = true)
     public Page<RestauranteResponseDTO> findAllRestaurantes(final String nome, final Pageable pageable) {
-        return restauranteRepository.findByNomeContainingIgnoreCase(nome == null ? "" : nome.trim(), pageable)
-                .map(restaurante -> mapToRestauranteResponseDTO(restaurante, null));
+        final Page<Restaurante> pagina = restauranteRepository.findByNomeContainingIgnoreCase(nome == null ? "" : nome.trim(), pageable);
+        // Logo e capa da página inteira numa só assinatura.
+        final Map<String, String> urls = armazenamentoArquivoService.findUrlsAssinadas(pagina.getContent().stream()
+                .flatMap(restaurante -> Stream.of(restaurante.getLogoPath(), restaurante.getCapaPath()))
+                .toList());
+        return pagina.map(restaurante -> mapToRestauranteResponseDTO(restaurante, null, urls));
     }
 
     @Override
@@ -166,15 +174,24 @@ public class RestauranteService implements IRestauranteService {
     // ---- Mappers Privados ----
 
     private RestauranteResponseDTO mapToRestauranteResponseDTO(final Restaurante restaurante, final Usuario gestor) {
+        final List<String> caminhos = new ArrayList<>();
+        caminhos.add(restaurante.getLogoPath());
+        caminhos.add(restaurante.getCapaPath());
+        return mapToRestauranteResponseDTO(restaurante, gestor, armazenamentoArquivoService.findUrlsAssinadas(caminhos));
+    }
+
+    /** {@code urls}: caminho → URL assinada (bucket privado), já resolvidas em lote. */
+    private RestauranteResponseDTO mapToRestauranteResponseDTO(final Restaurante restaurante, final Usuario gestor,
+                                                               final Map<String, String> urls) {
         return new RestauranteResponseDTO(
                 restaurante.getId(),
                 restaurante.getNome(),
                 restaurante.getSlug(),
                 restaurante.getDescricao(),
                 restaurante.getLogoPath(),
-                armazenamentoArquivoService.findUrlPublica(restaurante.getLogoPath()),
+                restaurante.getLogoPath() != null ? urls.get(restaurante.getLogoPath()) : null,
                 restaurante.getCapaPath(),
-                armazenamentoArquivoService.findUrlPublica(restaurante.getCapaPath()),
+                restaurante.getCapaPath() != null ? urls.get(restaurante.getCapaPath()) : null,
                 restaurante.isAtivo(),
                 restaurante.getCriadoEm(),
                 gestor != null ? gestor.getNome() : null,

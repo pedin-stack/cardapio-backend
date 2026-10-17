@@ -7,9 +7,10 @@ Padrões: `conecta-backend-blueprint.md`; desvios em [`docs/adr/adr-0001-adocao-
 
 ## Subir
 
-1. **Supabase** (só Storage): bucket **público** `cardapio-midias` com MIME `image/jpeg, image/png, image/webp,
-   video/mp4, video/quicktime, video/webm` e limite de 50 MB. Fotos ficam lá; o vídeo original passa por lá só até
-   virar HLS (depois é apagado) — o HLS fica no disco da API e é servido em `/videos/**`.
+1. **Supabase** (só Storage): bucket **privado** `cardapio-midias` com MIME `image/jpeg, image/png, image/webp,
+   video/mp4, video/quicktime, video/webm` e limite de 50 MB. Fotos ficam lá e chegam ao navegador por **URL
+   assinada** (24 h, assinadas em lote e cacheadas no Redis por 12 h); o vídeo original passa por lá só até virar HLS
+   (depois é apagado) — o HLS fica no disco da API e é servido em `/videos/**`.
    Em *Project Settings › API* copie a URL e a `service_role` key.
 2. `cp .env.example .env` e preencha (`SUPABASE_*`, `SUPER_ADMIN_*`, segredos).
 3. `docker compose up -d --build` → API em `http://localhost:8080`, Swagger em `/swagger-ui.html`.

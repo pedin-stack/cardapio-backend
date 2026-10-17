@@ -3,6 +3,9 @@ package br.com.cardapio.infrastructure.armazenamento;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Abstração do storage de arquivos (o domínio não sabe que é o Supabase).
@@ -38,6 +41,18 @@ public interface IArmazenamentoArquivoService {
     /** Apaga o objeto (ex.: o vídeo original depois de virar HLS). Falha só gera log: nunca derruba o fluxo. */
     void deleteArquivo(String caminho);
 
-    /** URL pública do objeto (bucket público), ou {@code null} se o caminho for nulo. */
-    String findUrlPublica(String caminho);
+    /**
+     * URLs de leitura temporárias (o bucket é privado), assinadas em lote numa única chamada ao storage.
+     * Toda URL devolvida vale por pelo menos 12 h. Caminhos nulos são ignorados; falha de assinatura deixa o
+     * caminho fora do mapa (a imagem some da tela, a requisição não falha).
+     *
+     * @param caminhos caminhos dos objetos no bucket
+     * @return caminho → URL assinada
+     */
+    Map<String, String> findUrlsAssinadas(Collection<String> caminhos);
+
+    /** Atalho de {@link #findUrlsAssinadas} para um caminho; {@code null} se o caminho for nulo ou falhar. */
+    default String findUrlAssinada(final String caminho) {
+        return caminho == null ? null : findUrlsAssinadas(List.of(caminho)).get(caminho);
+    }
 }

@@ -4,7 +4,9 @@ import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -16,7 +18,12 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -25,22 +32,32 @@ import java.util.regex.Pattern;
  * Desvio do blueprint §9.3 (S3): a API REST é a única que emite URL de upload assinada, então uma só
  * credencial cobre upload assinado, download do original e gravação do HLS (ADR-0001).
  * </p>
+ * <p>
+ * Bucket privado: leitura só por URL assinada. Assinamos por {@value #VALIDADE_HORAS} h e guardamos no Redis por
+ * metade disso — toda URL entregue vale ≥ 12 h, e abrir o cardápio não vira uma chamada ao Supabase por foto.
+ * </p>
  */
 @Slf4j
 @Service
 public class SupabaseArmazenamentoService implements IArmazenamentoArquivoService {
 
     private static final Pattern CAMINHO_PERMITIDO = Pattern.compile("[A-Za-z0-9._/-]{1,400}");
+    private static final long VALIDADE_HORAS = 24;
+    private static final Duration CACHE_URL = Duration.ofHours(VALIDADE_HORAS / 2);
+    private static final String PREFIXO_CACHE = "url_assinada:";
 
     private final RestClient restClient;
+    private final StringRedisTemplate redisTemplate;
     private final String supabaseUrl;
     private final String bucket;
 
     public SupabaseArmazenamentoService(@Value("${app.supabase.url}") final String supabaseUrl,
                                         @Value("${app.supabase.service-key}") final String serviceKey,
-                                        @Value("${app.supabase.bucket}") final String bucket) {
+                                        @Value("${app.supabase.bucket}") final String bucket,
+                                        final StringRedisTemplate redisTemplate) {
         this.supabaseUrl = supabaseUrl.replaceAll("/+$", "");
         this.bucket = bucket;
+        this.redisTemplate = redisTemplate;
         this.restClient = RestClient.builder()
                 .baseUrl(this.supabaseUrl + "/storage/v1")
                 .defaultHeader("Authorization", "Bearer " + serviceKey)
@@ -123,8 +140,72 @@ public class SupabaseArmazenamentoService implements IArmazenamentoArquivoServic
     }
 
     @Override
-    public String findUrlPublica(final String caminho) {
-        return caminho == null ? null : supabaseUrl + "/storage/v1/object/public/" + bucket + "/" + caminho;
+    public Map<String, String> findUrlsAssinadas(final Collection<String> caminhos) {
+        final List<String> distintos = caminhos.stream().filter(Objects::nonNull).distinct().toList();
+        if (distintos.isEmpty()) {
+            return Map.of();
+        }
+        distintos.forEach(SupabaseArmazenamentoService::validateCaminhoOrThrow);
+
+        final Map<String, String> urls = new HashMap<>(lerCache(distintos));
+        final List<String> faltando = distintos.stream().filter(caminho -> !urls.containsKey(caminho)).toList();
+        if (!faltando.isEmpty()) {
+            final Map<String, String> novas = assinar(faltando);
+            urls.putAll(novas);
+            gravarCache(novas);
+        }
+        return urls;
+    }
+
+    /** POST /object/sign/{bucket} com {expiresIn, paths}: uma chamada para o lote inteiro. */
+    private Map<String, String> assinar(final List<String> caminhos) {
+        try {
+            final List<Map<String, Object>> resposta = restClient.post()
+                    .uri("/object/sign/" + bucket)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("expiresIn", Duration.ofHours(VALIDADE_HORAS).toSeconds(), "paths", caminhos))
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() { });
+            final Map<String, String> urls = new HashMap<>();
+            if (resposta != null) {
+                for (final Map<String, Object> item : resposta) {
+                    // signedURL vem relativo a /storage/v1 (ex.: /object/sign/<bucket>/<caminho>?token=...).
+                    if (item.get("path") instanceof String caminho && item.get("signedURL") instanceof String relativa) {
+                        urls.put(caminho, supabaseUrl + "/storage/v1" + relativa);
+                    }
+                }
+            }
+            return urls;
+        } catch (final RestClientException ex) {
+            log.warn("Não foi possível assinar {} URL(s) do storage: {}", caminhos.size(), ex.getMessage());
+            return Map.of();
+        }
+    }
+
+    /** Cache é otimização: Redis fora do ar só faz assinar de novo. */
+    private Map<String, String> lerCache(final List<String> caminhos) {
+        try {
+            final List<String> valores = redisTemplate.opsForValue()
+                    .multiGet(caminhos.stream().map(caminho -> PREFIXO_CACHE + caminho).toList());
+            final Map<String, String> urls = new HashMap<>();
+            for (int i = 0; valores != null && i < caminhos.size(); i++) {
+                if (valores.get(i) != null) {
+                    urls.put(caminhos.get(i), valores.get(i));
+                }
+            }
+            return urls;
+        } catch (final RuntimeException ex) {
+            log.warn("Cache de URLs assinadas indisponível: {}", ex.getMessage());
+            return Map.of();
+        }
+    }
+
+    private void gravarCache(final Map<String, String> urls) {
+        try {
+            urls.forEach((caminho, url) -> redisTemplate.opsForValue().set(PREFIXO_CACHE + caminho, url, CACHE_URL));
+        } catch (final RuntimeException ex) {
+            log.warn("Cache de URLs assinadas indisponível: {}", ex.getMessage());
+        }
     }
 
     /**
