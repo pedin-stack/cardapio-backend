@@ -14,6 +14,33 @@ Padrões: `conecta-backend-blueprint.md`; desvios em [`docs/adr/adr-0001-adocao-
 3. `docker compose up -d --build` → API em `http://localhost:8080`, Swagger em `/swagger-ui.html`.
 4. Entre no front com `SUPER_ADMIN_EMAIL`/`SUPER_ADMIN_SENHA` (criado no 1º boot).
 
+## Produção numa VPS com Caddy
+
+O `docker-compose.prod.yml` não publica Postgres nem Redis, prende a API em `127.0.0.1`, limita CPU/RAM/logs
+e confia nos cabeçalhos `X-Forwarded-*` do Caddy.
+
+1. DNS: aponte `api.seudominio.com` (registro A) para o IP da VPS. O front deve ficar no mesmo domínio-pai
+   (ex.: `app.seudominio.com`), senão o cookie de login não é enviado.
+2. Na VPS: `git clone` deste repositório, `cp .env.example .env` e preencha com valores **novos** (segredo do JWT,
+   senhas do banco e do super admin), `CORS_ALLOWED_ORIGINS=https://app.seudominio.com` e as chaves do Supabase.
+3. `docker compose -f docker-compose.prod.yml up -d --build`
+4. No Caddyfile (normalmente `/etc/caddy/Caddyfile`), acrescente — o HTTPS é automático:
+
+   ```caddyfile
+   api.seudominio.com {
+   	encode zstd gzip
+   	reverse_proxy 127.0.0.1:8080
+   }
+   ```
+
+   e recarregue sem derrubar os outros sites: `sudo systemctl reload caddy` (ou `caddy reload`).
+   Caddy em container? Veja o comentário `networks` no fim do `docker-compose.prod.yml` e use
+   `reverse_proxy cardapio-api-1:8080`.
+5. Conferir: `curl -I https://api.seudominio.com/swagger-ui.html` e `docker compose -f docker-compose.prod.yml logs -f api`.
+
+Atualizar: `git pull && docker compose -f docker-compose.prod.yml up -d --build api` (as migrations rodam no boot).
+Backup do banco: `docker compose -f docker-compose.prod.yml exec postgres pg_dump -U cardapio cardapio_db > backup.sql`.
+
 ## Desenvolvimento
 
 ```powershell
