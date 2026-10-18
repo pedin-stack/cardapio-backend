@@ -37,6 +37,11 @@ public record RestauranteRequestDTO(
         @Size(max = 500, message = "O caminho do logo não pode exceder 500 caracteres.")
         String logoPath,
 
+        @Schema(description = "Cor de destaque do cardápio (ausente = padrão)", example = "#e9b872")
+        @JsonProperty("corDestaque")
+        @Pattern(regexp = RestauranteAtualizarRequestDTO.COR_REGEX, message = "Use uma cor no formato #rrggbb.")
+        String corDestaque,
+
         @Schema(description = "Caminho da imagem de capa no storage", example = "plataforma/imagens/1c2d.webp")
         @JsonProperty("capaPath")
         @Size(max = 500, message = "O caminho da capa não pode exceder 500 caracteres.")

@@ -25,7 +25,9 @@ import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -84,6 +86,11 @@ public class ItemCardapio extends PersistenceEntity {
     @Column(name = "nome", nullable = false, length = 80)
     @BatchSize(size = 50)
     private List<String> ingredientes = new ArrayList<>();
+
+    /** Grupos de opção única (JSONB): sempre lidos e gravados com o item inteiro. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "especificacoes", nullable = false, columnDefinition = "jsonb")
+    private List<Especificacao> especificacoes = new ArrayList<>();
 
     /** Caminhos no storage, na ordem de exibição do carrossel. */
     @ElementCollection(fetch = FetchType.LAZY)

@@ -1,12 +1,15 @@
 package br.com.cardapio.modules.core.restaurante.controller;
 
+import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.util.ResultError;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteAtualizarRequestDTO;
+import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteCorRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteStatusRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.response.RestauranteResponseDTO;
 import br.com.cardapio.modules.core.restaurante.service.IRestauranteService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -21,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * CRUD de restaurantes da plataforma (super admin).
+ * CRUD de restaurantes da plataforma (super admin) e a cor do cardápio (gestor, só o próprio).
  */
 @RestController
 @RequestMapping("/api/v1/core/restaurantes")
@@ -133,6 +137,40 @@ public class RestauranteController {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(ResultError.getResultErrors(result));
         }
         return ResponseEntity.ok(restauranteService.updateRestauranteStatus(id, dto));
+    }
+
+    /**
+     * Rota: GET /api/v1/core/restaurantes/meu-restaurante
+     */
+    @Operation(summary = "Meu restaurante", description = "Dados do restaurante do gestor logado (sem cache, ao contrário do cardápio público).")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Restaurante do gestor",
+                    content = @Content(schema = @Schema(implementation = RestauranteResponseDTO.class)))
+    })
+    @PreAuthorize("hasAuthority('CORE_RESTAURANTE_ATUALIZAR_PROPRIO')")
+    @GetMapping(value = "/meu-restaurante", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> findRestauranteLogado(@Parameter(hidden = true) @AuthenticationPrincipal final UsuarioUserDetailsDTO usuarioLogado) {
+        return ResponseEntity.ok(restauranteService.findRestauranteLogado(usuarioLogado));
+    }
+
+    /**
+     * Rota: PUT /api/v1/core/restaurantes/meu-restaurante/cor-destaque
+     */
+    @Operation(summary = "Cor do meu cardápio", description = "O gestor muda a cor de destaque do próprio cardápio (o restaurante vem da sessão).")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cor atualizada",
+                    content = @Content(schema = @Schema(implementation = RestauranteResponseDTO.class))),
+            @ApiResponse(responseCode = "422", description = "Cor fora do formato #rrggbb")
+    })
+    @PreAuthorize("hasAuthority('CORE_RESTAURANTE_ATUALIZAR_PROPRIO')")
+    @PutMapping(value = "/meu-restaurante/cor-destaque", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateCorDestaqueRestauranteLogado(@RequestBody @Valid final RestauranteCorRequestDTO dto,
+                                                                final BindingResult result,
+                                                                @Parameter(hidden = true) @AuthenticationPrincipal final UsuarioUserDetailsDTO usuarioLogado) {
+        if (result.hasErrors()) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(ResultError.getResultErrors(result));
+        }
+        return ResponseEntity.ok(restauranteService.updateCorDestaqueRestauranteLogado(usuarioLogado, dto));
     }
 
     /**

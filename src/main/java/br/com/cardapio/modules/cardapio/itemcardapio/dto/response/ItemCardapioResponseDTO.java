@@ -1,6 +1,7 @@
 package br.com.cardapio.modules.cardapio.itemcardapio.dto.response;
 
 import br.com.cardapio.modules.cardapio.categoria.dto.response.CategoriaResponseDTO;
+import br.com.cardapio.modules.cardapio.itemcardapio.model.Especificacao;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -48,6 +49,10 @@ public record ItemCardapioResponseDTO(
         @Schema(description = "Ingredientes")
         @JsonProperty("ingredientes")
         List<String> ingredientes,
+
+        @Schema(description = "Especificações (grupos de opção única)")
+        @JsonProperty("especificacoes")
+        List<Especificacao> especificacoes,
 
         @Schema(description = "Imagens, na ordem do carrossel")
         @JsonProperty("imagens")

@@ -1,7 +1,9 @@
 package br.com.cardapio.modules.core.restaurante.service;
 
+import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteAtualizarRequestDTO;
+import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteCorRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteStatusRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.response.RestauranteResponseDTO;
@@ -56,6 +58,20 @@ public interface IRestauranteService {
      * @throws BusinessException {@code NOT_FOUND}
      */
     RestauranteResponseDTO updateRestauranteStatus(UUID id, RestauranteStatusRequestDTO dto);
+
+    /**
+     * Gestor: dados do próprio restaurante (o id vem da sessão).
+     *
+     * @throws BusinessException {@code UNAUTHORIZED} se o usuário não tem restaurante
+     */
+    RestauranteResponseDTO findRestauranteLogado(UsuarioUserDetailsDTO usuarioLogado);
+
+    /**
+     * Gestor: muda a cor do cardápio do próprio restaurante (o id vem da sessão).
+     *
+     * @throws BusinessException {@code NOT_FOUND}
+     */
+    RestauranteResponseDTO updateCorDestaqueRestauranteLogado(UsuarioUserDetailsDTO usuarioLogado, RestauranteCorRequestDTO dto);
 
     /**
      * Exclui o restaurante, seu gestor e todo o cardápio/métricas (FKs com ON DELETE CASCADE).

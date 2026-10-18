@@ -41,6 +41,11 @@ public record RestauranteAtualizarRequestDTO(
         @Size(max = 500, message = "O caminho da capa não pode exceder 500 caracteres.")
         String capaPath,
 
+        @Schema(description = "Cor de destaque do cardápio (ausente = padrão)", example = "#e9b872")
+        @JsonProperty("corDestaque")
+        @Pattern(regexp = COR_REGEX, message = "Use uma cor no formato #rrggbb.")
+        String corDestaque,
+
         @Schema(description = "Nova senha do gestor (opcional)", example = "N0v@Senha")
         @JsonProperty("gestorSenha")
         @Size(min = 8, max = 72, message = "A senha deve ter entre 8 e 72 caracteres.")
@@ -48,4 +53,6 @@ public record RestauranteAtualizarRequestDTO(
 ) {
     /** Slug: minúsculas/números separados por hífen simples. Espelhado no front. */
     public static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+    /** Cor hex {@code #rrggbb}. Espelhado no front. */
+    public static final String COR_REGEX = "^#[0-9a-fA-F]{6}$";
 }

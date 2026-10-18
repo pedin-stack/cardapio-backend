@@ -4,10 +4,12 @@ import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.modules.cardapio.curtida.model.Curtida;
 import br.com.cardapio.modules.cardapio.curtida.repository.ICurtidaRepository;
+import br.com.cardapio.modules.cardapio.itemcardapio.model.Especificacao;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
 import br.com.cardapio.modules.cardapio.metrica.dto.response.MetricasResponseDTO;
 import br.com.cardapio.modules.cardapio.metrica.service.IMetricaService;
+import br.com.cardapio.modules.cardapio.publico.dto.response.CardapioPublicoResponseDTO;
 import br.com.cardapio.modules.cardapio.publico.service.ICardapioPublicoService;
 import br.com.cardapio.modules.cardapio.visualizacao.model.Visualizacao;
 import br.com.cardapio.modules.cardapio.visualizacao.repository.IVisualizacaoRepository;
@@ -27,6 +29,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -147,5 +151,25 @@ class MetricasIT {
         assertThatThrownBy(() -> cardapioPublicoService.findCardapioBySlug(desativado.getSlug()))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Serviço indisponível.");
+    }
+
+    @Test
+    @DisplayName("Especificações (JSONB) e cor do restaurante voltam do banco no cardápio público")
+    void findCardapioBySlug_ComEspecificacoesECor_DevolveComoGravado() {
+        final Restaurante restaurante = criarRestaurante(true);
+        restaurante.setCorDestaque("#e9b872");
+        restauranteRepository.save(restaurante);
+        final ItemCardapio item = new ItemCardapio();
+        item.setNome("Picanha");
+        item.setValor(new BigDecimal("98.90"));
+        item.setRestaurante(restaurante);
+        final Especificacao ponto = new Especificacao("Ponto da carne", List.of("Mal passado", "Ao ponto", "Bem passado"));
+        item.setEspecificacoes(new ArrayList<>(List.of(ponto)));
+        itemCardapioRepository.save(item);
+
+        final CardapioPublicoResponseDTO cardapio = cardapioPublicoService.findCardapioBySlug(restaurante.getSlug());
+
+        assertThat(cardapio.restaurante().corDestaque()).isEqualTo("#e9b872");
+        assertThat(cardapio.itens().getFirst().especificacoes()).containsExactly(ponto);
     }
 }

@@ -71,7 +71,8 @@ public class CardapioPublicoService implements ICardapioPublicoService {
                         restaurante.getSlug(),
                         restaurante.getDescricao(),
                         restaurante.getLogoPath() != null ? urls.get(restaurante.getLogoPath()) : null,
-                        restaurante.getCapaPath() != null ? urls.get(restaurante.getCapaPath()) : null),
+                        restaurante.getCapaPath() != null ? urls.get(restaurante.getCapaPath()) : null,
+                        restaurante.getCorDestaque()),
                 categorias.stream()
                         .filter(categoria -> categoriasComItens.contains(categoria.getId()))
                         .map(CategoriaService::mapToCategoriaResponseDTO)
@@ -88,6 +89,7 @@ public class CardapioPublicoService implements ICardapioPublicoService {
                 item.getValor(),
                 item.getCategorias().stream().map(Categoria::getId).toList(),
                 List.copyOf(item.getIngredientes()),
+                List.copyOf(item.getEspecificacoes()),
                 // Foto que falhou ao assinar fica de fora (o carrossel mostra as outras).
                 item.getImagens().stream().map(urls::get).filter(Objects::nonNull).toList(),
                 videoPronto ? armazenamentoVideoService.findUrlPublica(item.getVideoHlsPath()) : null,

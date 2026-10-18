@@ -16,6 +16,7 @@ import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.VideoResponseD
 import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
 import br.com.cardapio.modules.cardapio.itemcardapio.event.VideoItemDescartadoEvent;
 import br.com.cardapio.modules.cardapio.itemcardapio.event.VideoItemEnviadoEvent;
+import br.com.cardapio.modules.cardapio.itemcardapio.model.Especificacao;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
 import br.com.cardapio.modules.cardapio.shared.util.RestauranteLogadoUtil;
@@ -26,12 +27,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * CRUD de itens do cardápio, restrito ao restaurante do gestor logado.
@@ -136,6 +139,11 @@ public class ItemCardapioService implements IItemCardapioService {
         if (dto.ingredientes() != null) {
             dto.ingredientes().forEach(ingrediente -> item.getIngredientes().add(ingrediente.trim()));
         }
+        item.setEspecificacoes(dto.especificacoes() == null ? new ArrayList<>() : dto.especificacoes().stream()
+                .map(especificacao -> new Especificacao(
+                        especificacao.nome().trim(),
+                        especificacao.opcoes().stream().map(String::trim).toList()))
+                .collect(Collectors.toCollection(ArrayList::new)));
         item.getImagens().clear();
         item.getImagens().addAll(imagens);
     }
@@ -181,6 +189,7 @@ public class ItemCardapioService implements IItemCardapioService {
                         .map(CategoriaService::mapToCategoriaResponseDTO)
                         .toList(),
                 List.copyOf(item.getIngredientes()),
+                List.copyOf(item.getEspecificacoes()),
                 item.getImagens().stream()
                         .map(caminho -> new MidiaResponseDTO(caminho, urls.get(caminho)))
                         .toList(),

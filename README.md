@@ -63,9 +63,10 @@ mvn clean verify                                     # unitários + MetricasIT (
 |---|---|---|
 | `POST/DELETE /api/v1/autenticacao/sessoes/sessao` | público | login/logout (JWT em cookie HttpOnly `cardapio_token`) |
 | `GET /api/v1/core/usuarios/usuario/meus-dados` | logado | sessão |
-| `/api/v1/core/restaurantes` | super admin | CRUD + `PUT …/restaurante/{id}/status` |
+| `/api/v1/core/restaurantes` | super admin | CRUD (com `corDestaque`) + `PUT …/restaurante/{id}/status` |
+| `GET /api/v1/core/restaurantes/meu-restaurante` · `PUT …/meu-restaurante/cor-destaque` | gestor | dados e cor do cardápio do próprio restaurante (id da sessão) |
 | `POST /api/v1/core/midias/upload-assinado` | gestor/super admin | token de upload direto ao bucket |
-| `/api/v1/cardapio/categorias`, `/api/v1/cardapio/itens` | gestor | cardápio do próprio restaurante |
+| `/api/v1/cardapio/categorias`, `/api/v1/cardapio/itens` | gestor | cardápio do próprio restaurante (itens com `especificacoes`: grupos de opção única) |
 | `GET /api/v1/cardapio/metricas` | gestor | tempo por item, mais curtidos, quase pedidos, mapa dia×hora |
 | `GET /api/v1/cardapio/restaurantes/restaurante/{slug}` | público | cardápio (desativado → 404 "Serviço indisponível") |
 | `PUT/DELETE …/{slug}/itens/item/{id}/curtida` · `POST …/{slug}/visualizacoes` | público (`X-Device-ID`) | curtidas e tempo de tela |

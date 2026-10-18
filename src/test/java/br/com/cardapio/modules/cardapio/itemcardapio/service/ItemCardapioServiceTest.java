@@ -63,7 +63,7 @@ class ItemCardapioServiceTest {
 
     private ItemCardapioRequestDTO dto(final List<String> imagens, final List<UUID> categorias, final String video) {
         return new ItemCardapioRequestDTO("Cappuccino", "desc", new BigDecimal("14.90"), true, 0,
-                categorias, List.of("leite"), imagens, video);
+                categorias, List.of("leite"), List.of(), imagens, video);
     }
 
     @Test

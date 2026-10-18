@@ -1,14 +1,17 @@
 package br.com.cardapio.modules.core.restaurante.service;
 
 import br.com.cardapio.config.cache.RedisCacheConfig;
+import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoArquivoService;
 import br.com.cardapio.infrastructure.armazenamento.SupabaseArmazenamentoService;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
+import br.com.cardapio.modules.cardapio.shared.util.RestauranteLogadoUtil;
 import br.com.cardapio.modules.core.midia.service.IMidiaService;
 import br.com.cardapio.modules.core.perfil.model.Perfil;
 import br.com.cardapio.modules.core.perfil.repository.IPerfilRepository;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteAtualizarRequestDTO;
+import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteCorRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteStatusRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.response.RestauranteResponseDTO;
@@ -85,6 +88,7 @@ public class RestauranteService implements IRestauranteService {
         restaurante.setDescricao(dto.descricao());
         restaurante.setLogoPath(dto.logoPath());
         restaurante.setCapaPath(dto.capaPath());
+        restaurante.setCorDestaque(normalizarCor(dto.corDestaque()));
         restaurante.setAtivo(true);
         final Restaurante salvo = restauranteRepository.save(restaurante);
 
@@ -114,6 +118,7 @@ public class RestauranteService implements IRestauranteService {
         restaurante.setDescricao(dto.descricao());
         restaurante.setLogoPath(dto.logoPath());
         restaurante.setCapaPath(dto.capaPath());
+        restaurante.setCorDestaque(normalizarCor(dto.corDestaque()));
 
         final Usuario gestor = findGestor(id);
         if (gestor != null && dto.gestorSenha() != null && !dto.gestorSenha().isBlank()) {
@@ -128,6 +133,22 @@ public class RestauranteService implements IRestauranteService {
     public RestauranteResponseDTO updateRestauranteStatus(final UUID id, final RestauranteStatusRequestDTO dto) {
         final Restaurante restaurante = findRestauranteByIdOrThrow(id);
         restaurante.setAtivo(Boolean.TRUE.equals(dto.ativo()));
+        return mapToRestauranteResponseDTO(restaurante, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RestauranteResponseDTO findRestauranteLogado(final UsuarioUserDetailsDTO usuarioLogado) {
+        return mapToRestauranteResponseDTO(findRestauranteByIdOrThrow(RestauranteLogadoUtil.findRestauranteIdOrThrow(usuarioLogado)), null);
+    }
+
+    @Override
+    @Transactional
+    public RestauranteResponseDTO updateCorDestaqueRestauranteLogado(final UsuarioUserDetailsDTO usuarioLogado,
+                                                                      final RestauranteCorRequestDTO dto) {
+        // O restaurante vem da sessão, nunca do corpo: o gestor só muda o próprio.
+        final Restaurante restaurante = findRestauranteByIdOrThrow(RestauranteLogadoUtil.findRestauranteIdOrThrow(usuarioLogado));
+        restaurante.setCorDestaque(normalizarCor(dto.corDestaque()));
         return mapToRestauranteResponseDTO(restaurante, null);
     }
 
@@ -171,6 +192,11 @@ public class RestauranteService implements IRestauranteService {
         }
     }
 
+    /** Vazio = cor padrão; hex sempre minúsculo (o formato já foi validado no DTO). */
+    private static String normalizarCor(final String cor) {
+        return cor == null || cor.isBlank() ? null : cor.toLowerCase();
+    }
+
     // ---- Mappers Privados ----
 
     private RestauranteResponseDTO mapToRestauranteResponseDTO(final Restaurante restaurante, final Usuario gestor) {
@@ -192,6 +218,7 @@ public class RestauranteService implements IRestauranteService {
                 restaurante.getLogoPath() != null ? urls.get(restaurante.getLogoPath()) : null,
                 restaurante.getCapaPath(),
                 restaurante.getCapaPath() != null ? urls.get(restaurante.getCapaPath()) : null,
+                restaurante.getCorDestaque(),
                 restaurante.isAtivo(),
                 restaurante.getCriadoEm(),
                 gestor != null ? gestor.getNome() : null,

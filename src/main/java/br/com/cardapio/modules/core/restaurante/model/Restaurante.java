@@ -45,6 +45,10 @@ public class Restaurante extends PersistenceEntity {
     @Column(name = "capa_path", length = 500)
     private String capaPath;
 
+    /** Hex {@code #rrggbb} do destaque no cardápio público; null = cor padrão. */
+    @Column(name = "cor_destaque", length = 7)
+    private String corDestaque;
+
     @Column(name = "ativo", nullable = false)
     private boolean ativo = true;
 

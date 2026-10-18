@@ -27,6 +27,7 @@ Seguir o blueprint, com os desvios abaixo:
 | 9 | **Supabase só para fotos, em bucket privado.** Leitura por URL assinada (24 h) emitida pela API em lote e cacheada no Redis (12 h). O vídeo original passa pelo bucket (upload assinado) e é apagado após virar HLS; o HLS fica num volume da VPS, servido pela API em `/videos/**`. | O plano gratuito do Supabase (1 GB de storage, 5 GB de tráfego) não comporta vídeo; a VPS tem disco e banda. Privado: ninguém lista nem baixa o bucket sem passar pela API. |
 | 10 | Front na Vercel chama a API via **middleware** (`/api/*` → VPS). | O cookie de sessão fica no domínio do front: funciona com `*.vercel.app` + `*.sslip.io`, sem domínio próprio. |
 | 11 | `/api/*` exige o segredo `X-Cardapio-Front` (injetado pelo middleware do front); Postgres só aceita a API (IP fixo no `pg_hba.conf`) e o socket local; Redis com senha; Swagger desligado em produção. | CORS só restringe navegadores; a API e o banco não devem atender nenhuma outra origem, nem processos da própria VPS. |
+| 12 | **Especificações do item em JSONB** (`itens_cardapio.especificacoes`: `[{nome, opcoes[]}]`), não em tabelas filhas. | Grupo → opções é aninhado (não cabe em `@ElementCollection`), é sempre lido e gravado com o item inteiro e nunca é consultado por SQL; uma entidade com coleção própria só somaria código. |
 
 ## Vídeo em chunks (HLS)
 

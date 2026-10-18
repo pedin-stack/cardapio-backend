@@ -46,6 +46,10 @@ public record RestauranteResponseDTO(
         @JsonProperty("capaUrl")
         String capaUrl,
 
+        @Schema(description = "Cor de destaque do cardápio (ausente = padrão)", example = "#e9b872")
+        @JsonProperty("corDestaque")
+        String corDestaque,
+
         @Schema(description = "Se o cardápio está no ar", example = "true")
         @JsonProperty("ativo")
         boolean ativo,

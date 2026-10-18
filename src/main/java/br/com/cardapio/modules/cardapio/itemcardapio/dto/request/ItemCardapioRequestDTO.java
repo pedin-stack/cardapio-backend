@@ -1,7 +1,9 @@
 package br.com.cardapio.modules.cardapio.itemcardapio.dto.request;
 
+import br.com.cardapio.modules.cardapio.itemcardapio.model.Especificacao;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
@@ -58,6 +60,11 @@ public record ItemCardapioRequestDTO(
         @JsonProperty("ingredientes")
         @Size(max = 40, message = "Um item pode ter no máximo 40 ingredientes.")
         List<@NotBlank(message = "Ingrediente vazio.") @Size(max = 80, message = "Cada ingrediente pode ter no máximo 80 caracteres.") String> ingredientes,
+
+        @Schema(description = "Especificações que o cliente escolhe (ex.: ponto da carne)")
+        @JsonProperty("especificacoes")
+        @Size(max = 10, message = "Um item pode ter no máximo 10 especificações.")
+        List<@NotNull(message = "Especificação inválida.") @Valid Especificacao> especificacoes,
 
         @Schema(description = "Caminhos das imagens no storage, na ordem do carrossel (máx. 8)")
         @JsonProperty("imagens")

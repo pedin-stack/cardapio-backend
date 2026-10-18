@@ -14,6 +14,8 @@ public enum Permissao {
     CORE_RESTAURANTE_CRIAR,
     CORE_RESTAURANTE_ATUALIZAR,
     CORE_RESTAURANTE_APAGAR,
+    /** Gestor: aparência do próprio restaurante (cor do cardápio). */
+    CORE_RESTAURANTE_ATUALIZAR_PROPRIO,
 
     // --- CORE: upload de mídia (URL assinada) -------------------------------------------------
     CORE_MIDIA_CRIAR,
