@@ -22,6 +22,22 @@ public interface ICurtidaRepository extends JpaRepository<Curtida, UUID> {
     Optional<Curtida> findByItemIdAndDispositivoIdAndRemovidoEmIsNull(UUID itemId, UUID dispositivoId);
 
     /**
+     * "Mais pedidos" do cardápio público: itens ativos com mais curtidas que ficaram, desde sempre, do mais curtido
+     * para o menos. Item sem curtida não entra (lista vazia = o chip não aparece).
+     */
+    @Query(value = """
+            SELECT c.item_id
+            FROM public.curtidas c
+            JOIN public.itens_cardapio i ON i.id = c.item_id AND i.ativo
+            WHERE c.restaurante_id = :restauranteId
+              AND c.removido_em IS NULL
+            GROUP BY c.item_id, i.ordem, i.nome
+            ORDER BY COUNT(*) DESC, i.ordem, i.nome
+            LIMIT :limite
+            """, nativeQuery = true)
+    List<UUID> findItensMaisPedidos(@Param("restauranteId") UUID restauranteId, @Param("limite") int limite);
+
+    /**
      * Itens por curtidas no período. {@code removidas = false}: curtidas que ficaram ("pedidos");
      * {@code removidas = true}: curtidas desfeitas ("quase pedidos").
      */

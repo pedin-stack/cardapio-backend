@@ -7,6 +7,7 @@ import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
 import br.com.cardapio.modules.cardapio.categoria.model.Categoria;
 import br.com.cardapio.modules.cardapio.categoria.repository.ICategoriaRepository;
 import br.com.cardapio.modules.cardapio.categoria.service.CategoriaService;
+import br.com.cardapio.modules.cardapio.curtida.repository.ICurtidaRepository;
 import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
@@ -34,7 +35,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CardapioPublicoService implements ICardapioPublicoService {
 
+    /** Quantos itens o "Mais pedidos" mostra. */
+    public static final int MAIS_PEDIDOS_LIMITE = 7;
+
     private final IRestauranteRepository restauranteRepository;
+    private final ICurtidaRepository curtidaRepository;
     private final ICategoriaRepository categoriaRepository;
     private final IItemCardapioRepository itemCardapioRepository;
     private final IArmazenamentoArquivoService armazenamentoArquivoService;
@@ -77,7 +82,8 @@ public class CardapioPublicoService implements ICardapioPublicoService {
                         .filter(categoria -> categoriasComItens.contains(categoria.getId()))
                         .map(CategoriaService::mapToCategoriaResponseDTO)
                         .toList(),
-                itens);
+                itens,
+                curtidaRepository.findItensMaisPedidos(restaurante.getId(), MAIS_PEDIDOS_LIMITE));
     }
 
     private ItemPublicoResponseDTO mapToItemPublicoResponseDTO(final ItemCardapio item, final Map<String, String> urls) {

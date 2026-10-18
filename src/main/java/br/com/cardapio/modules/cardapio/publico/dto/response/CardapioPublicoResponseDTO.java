@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Cardápio público completo numa única resposta (o feed inteiro cabe em uma ida à rede).
@@ -24,5 +25,9 @@ public record CardapioPublicoResponseDTO(
 
         @Schema(description = "Itens ativos na ordem do feed")
         @JsonProperty("itens")
-        List<ItemPublicoResponseDTO> itens
+        List<ItemPublicoResponseDTO> itens,
+
+        @Schema(description = "\"Mais pedidos\": ids dos itens mais curtidos, do mais curtido para o menos (vazio = sem curtidas)")
+        @JsonProperty("maisPedidos")
+        List<UUID> maisPedidos
 ) {}

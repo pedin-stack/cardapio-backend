@@ -154,6 +154,32 @@ class MetricasIT {
     }
 
     @Test
+    @DisplayName("Mais pedidos: só curtidas que ficaram, de itens ativos, do mais curtido para o menos, até 7")
+    void findCardapioBySlug_ComCurtidas_DevolveMaisPedidosEmOrdem() {
+        final Restaurante restaurante = criarRestaurante(true);
+        final LocalDateTime agora = LocalDateTime.now();
+        final ItemCardapio tres = criarItem(restaurante, "Três");
+        final ItemCardapio um = criarItem(restaurante, "Um");
+        final ItemCardapio dois = criarItem(restaurante, "Dois");
+        for (int i = 0; i < 3; i++) curtir(restaurante, tres, agora, false);
+        for (int i = 0; i < 2; i++) curtir(restaurante, dois, agora, false);
+        curtir(restaurante, um, agora, false);
+        // Removidas não contam ("quase pedidos"), nem as de item escondido do cardápio.
+        for (int i = 0; i < 5; i++) curtir(restaurante, um, agora, true);
+        final ItemCardapio inativo = criarItem(restaurante, "Inativo");
+        inativo.setAtivo(false);
+        itemCardapioRepository.save(inativo);
+        for (int i = 0; i < 9; i++) curtir(restaurante, inativo, agora, false);
+        // Oito itens com 1 curtida: o limite corta em 7.
+        for (int i = 0; i < 8; i++) curtir(restaurante, criarItem(restaurante, "Extra " + i), agora, false);
+
+        final List<UUID> maisPedidos = cardapioPublicoService.findCardapioBySlug(restaurante.getSlug()).maisPedidos();
+
+        assertThat(maisPedidos).hasSize(7).startsWith(tres.getId(), dois.getId()).doesNotContain(inativo.getId());
+        assertThat(cardapioPublicoService.findCardapioBySlug(criarRestaurante(true).getSlug()).maisPedidos()).isEmpty();
+    }
+
+    @Test
     @DisplayName("Especificações (JSONB) e cor do restaurante voltam do banco no cardápio público")
     void findCardapioBySlug_ComEspecificacoesECor_DevolveComoGravado() {
         final Restaurante restaurante = criarRestaurante(true);

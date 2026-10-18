@@ -68,5 +68,5 @@ mvn clean verify                                     # unitários + MetricasIT (
 | `POST /api/v1/core/midias/upload-assinado` | gestor/super admin | token de upload direto ao bucket |
 | `/api/v1/cardapio/categorias`, `/api/v1/cardapio/itens` | gestor | cardápio do próprio restaurante (itens com `especificacoes`: grupos de opção única) |
 | `GET /api/v1/cardapio/metricas` | gestor | tempo por item, mais curtidos, quase pedidos, mapa dia×hora |
-| `GET /api/v1/cardapio/restaurantes/restaurante/{slug}` | público | cardápio (desativado → 404 "Serviço indisponível") |
+| `GET /api/v1/cardapio/restaurantes/restaurante/{slug}` | público | cardápio (desativado → 404 "Serviço indisponível"), com `maisPedidos`: os 7 itens mais curtidos |
 | `PUT/DELETE …/{slug}/itens/item/{id}/curtida` · `POST …/{slug}/visualizacoes` | público (`X-Device-ID`) | curtidas e tempo de tela |
