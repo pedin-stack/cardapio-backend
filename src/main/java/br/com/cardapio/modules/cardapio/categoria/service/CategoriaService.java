@@ -10,6 +10,8 @@ import br.com.cardapio.modules.cardapio.categoria.repository.ICategoriaRepositor
 import br.com.cardapio.modules.cardapio.shared.util.RestauranteLogadoUtil;
 import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,13 @@ public class CategoriaService implements ICategoriaService {
         return categoriaRepository.findByRestauranteIdOrderByOrdemAscNomeAsc(restauranteId).stream()
                 .map(CategoriaService::mapToCategoriaResponseDTO)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<CategoriaResponseDTO> findCategoriasPagina(final Pageable pageable, final UsuarioUserDetailsDTO usuarioLogado) {
+        final UUID restauranteId = RestauranteLogadoUtil.findRestauranteIdOrThrow(usuarioLogado);
+        return categoriaRepository.findByRestauranteId(restauranteId, pageable).map(CategoriaService::mapToCategoriaResponseDTO);
     }
 
     @Override

@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -51,6 +53,19 @@ public class CategoriaController {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> findAllCategorias(@Parameter(hidden = true) @AuthenticationPrincipal final UsuarioUserDetailsDTO usuarioLogado) {
         return ResponseEntity.ok(categoriaService.findAllCategorias(usuarioLogado));
+    }
+
+    /**
+     * Rota: GET /api/v1/cardapio/categorias/pagina?page&size
+     */
+    @Operation(summary = "Listar categorias paginadas", description = "Categorias do restaurante do gestor, por ordem e nome.")
+    @ApiResponse(responseCode = "200", description = "Página recuperada com sucesso")
+    @PreAuthorize("hasAuthority('CARDAPIO_CATEGORIA_VISUALIZAR_PROPRIAS')")
+    @GetMapping(value = "/pagina", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> findCategoriasPagina(
+            @PageableDefault(size = 10, sort = {"ordem", "nome", "id"}) final Pageable pageable,
+            @Parameter(hidden = true) @AuthenticationPrincipal final UsuarioUserDetailsDTO usuarioLogado) {
+        return ResponseEntity.ok(categoriaService.findCategoriasPagina(pageable, usuarioLogado));
     }
 
     /**

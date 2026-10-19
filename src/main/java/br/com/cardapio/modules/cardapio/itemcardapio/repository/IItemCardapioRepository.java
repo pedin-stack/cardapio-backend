@@ -2,6 +2,8 @@ package br.com.cardapio.modules.cardapio.itemcardapio.repository;
 
 import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -9,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -24,6 +27,11 @@ public interface IItemCardapioRepository extends JpaRepository<ItemCardapio, UUI
     List<ItemCardapio> findByRestauranteIdOrderByOrdemAscNomeAsc(UUID restauranteId);
 
     List<ItemCardapio> findByRestauranteIdAndAtivoTrueOrderByOrdemAscNomeAsc(UUID restauranteId);
+
+    Page<ItemCardapio> findByRestauranteId(UUID restauranteId, Pageable pageable);
+
+    /** Itens em qualquer uma das categorias; {@code Distinct}: o item em duas delas aparece uma vez só. */
+    Page<ItemCardapio> findDistinctByRestauranteIdAndCategoriasIdIn(UUID restauranteId, Collection<UUID> categoriaIds, Pageable pageable);
 
     Optional<ItemCardapio> findByIdAndRestauranteId(UUID id, UUID restauranteId);
 

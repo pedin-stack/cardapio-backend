@@ -4,6 +4,8 @@ import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.modules.cardapio.itemcardapio.dto.request.ItemCardapioRequestDTO;
 import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.ItemCardapioResponseDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +21,15 @@ public interface IItemCardapioService {
      * @throws BusinessException {@code UNAUTHORIZED} se o usuário não administra restaurante
      */
     List<ItemCardapioResponseDTO> findAllItensCardapio(UsuarioUserDetailsDTO usuarioLogado);
+
+    /**
+     * @param categoriaIds  só itens em alguma destas categorias; vazio ou nulo = todos
+     * @param pageable      página, tamanho e ordem
+     * @param usuarioLogado gestor (define o restaurante)
+     * @return página de itens (ativos e inativos), com as fotos só desta página assinadas
+     * @throws BusinessException {@code UNAUTHORIZED} se o usuário não administra restaurante
+     */
+    Page<ItemCardapioResponseDTO> findItensCardapioPagina(List<UUID> categoriaIds, Pageable pageable, UsuarioUserDetailsDTO usuarioLogado);
 
     /**
      * @throws BusinessException {@code NOT_FOUND} (inclusive se for de outro restaurante)

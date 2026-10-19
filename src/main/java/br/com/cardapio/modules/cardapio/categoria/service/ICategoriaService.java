@@ -4,6 +4,8 @@ import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.modules.cardapio.categoria.dto.request.CategoriaRequestDTO;
 import br.com.cardapio.modules.cardapio.categoria.dto.response.CategoriaResponseDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +21,14 @@ public interface ICategoriaService {
      * @throws BusinessException {@code UNAUTHORIZED} se o usuário não administra restaurante
      */
     List<CategoriaResponseDTO> findAllCategorias(UsuarioUserDetailsDTO usuarioLogado);
+
+    /**
+     * @param pageable      página, tamanho e ordem
+     * @param usuarioLogado gestor (define o restaurante)
+     * @return página de categorias
+     * @throws BusinessException {@code UNAUTHORIZED} se o usuário não administra restaurante
+     */
+    Page<CategoriaResponseDTO> findCategoriasPagina(Pageable pageable, UsuarioUserDetailsDTO usuarioLogado);
 
     /**
      * @throws BusinessException {@code CATEGORIA_ALREADY_EXISTS} (409) se o nome já existir no restaurante

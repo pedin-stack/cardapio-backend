@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,8 +29,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -51,6 +55,20 @@ public class ItemCardapioController {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> findAllItensCardapio(@Parameter(hidden = true) @AuthenticationPrincipal final UsuarioUserDetailsDTO usuarioLogado) {
         return ResponseEntity.ok(itemCardapioService.findAllItensCardapio(usuarioLogado));
+    }
+
+    /**
+     * Rota: GET /api/v1/cardapio/itens/pagina?categoriaIds=a,b&page&size
+     */
+    @Operation(summary = "Listar itens paginados", description = "Itens do restaurante na ordem do feed, opcionalmente só das categorias informadas.")
+    @ApiResponse(responseCode = "200", description = "Página recuperada com sucesso")
+    @PreAuthorize("hasAuthority('CARDAPIO_ITEM_VISUALIZAR_PROPRIOS')")
+    @GetMapping(value = "/pagina", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> findItensCardapioPagina(
+            @RequestParam(required = false) final List<UUID> categoriaIds,
+            @PageableDefault(size = 21, sort = {"ordem", "nome", "id"}) final Pageable pageable,
+            @Parameter(hidden = true) @AuthenticationPrincipal final UsuarioUserDetailsDTO usuarioLogado) {
+        return ResponseEntity.ok(itemCardapioService.findItensCardapioPagina(categoriaIds, pageable, usuarioLogado));
     }
 
     /**

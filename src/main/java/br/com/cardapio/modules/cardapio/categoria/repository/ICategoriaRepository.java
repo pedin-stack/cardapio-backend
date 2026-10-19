@@ -1,6 +1,8 @@
 package br.com.cardapio.modules.cardapio.categoria.repository;
 
 import br.com.cardapio.modules.cardapio.categoria.model.Categoria;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +18,8 @@ import java.util.UUID;
 public interface ICategoriaRepository extends JpaRepository<Categoria, UUID> {
 
     List<Categoria> findByRestauranteIdOrderByOrdemAscNomeAsc(UUID restauranteId);
+
+    Page<Categoria> findByRestauranteId(UUID restauranteId, Pageable pageable);
 
     List<Categoria> findByIdInAndRestauranteId(Collection<UUID> ids, UUID restauranteId);
 

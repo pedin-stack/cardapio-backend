@@ -24,6 +24,8 @@ import br.com.cardapio.modules.core.midia.service.IMidiaService;
 import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +61,19 @@ public class ItemCardapioService implements IItemCardapioService {
         final Map<String, String> urls = armazenamentoArquivoService.findUrlsAssinadas(
                 itens.stream().flatMap(item -> item.getImagens().stream()).toList());
         return itens.stream().map(item -> mapToItemCardapioResponseDTO(item, urls)).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ItemCardapioResponseDTO> findItensCardapioPagina(final List<UUID> categoriaIds, final Pageable pageable,
+                                                                 final UsuarioUserDetailsDTO usuarioLogado) {
+        final UUID restauranteId = RestauranteLogadoUtil.findRestauranteIdOrThrow(usuarioLogado);
+        final Page<ItemCardapio> pagina = categoriaIds == null || categoriaIds.isEmpty()
+                ? itemCardapioRepository.findByRestauranteId(restauranteId, pageable)
+                : itemCardapioRepository.findDistinctByRestauranteIdAndCategoriasIdIn(restauranteId, categoriaIds, pageable);
+        final Map<String, String> urls = armazenamentoArquivoService.findUrlsAssinadas(
+                pagina.getContent().stream().flatMap(item -> item.getImagens().stream()).toList());
+        return pagina.map(item -> mapToItemCardapioResponseDTO(item, urls));
     }
 
     @Override

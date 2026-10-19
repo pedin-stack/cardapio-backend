@@ -2,12 +2,21 @@ package br.com.cardapio.modules.cardapio.metrica;
 
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.exception.BusinessException;
+import br.com.cardapio.modules.cardapio.categoria.dto.response.CategoriaResponseDTO;
+import br.com.cardapio.modules.cardapio.categoria.model.Categoria;
+import br.com.cardapio.modules.cardapio.categoria.repository.ICategoriaRepository;
+import br.com.cardapio.modules.cardapio.categoria.service.ICategoriaService;
 import br.com.cardapio.modules.cardapio.curtida.model.Curtida;
 import br.com.cardapio.modules.cardapio.curtida.repository.ICurtidaRepository;
+import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.ItemCardapioResponseDTO;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.Especificacao;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
+import br.com.cardapio.modules.cardapio.itemcardapio.service.IItemCardapioService;
 import br.com.cardapio.modules.cardapio.metrica.dto.response.MetricasResponseDTO;
+import br.com.cardapio.modules.cardapio.metrica.dto.response.RankingItemResponseDTO;
+import br.com.cardapio.modules.cardapio.metrica.enums.OrdemRanking;
+import br.com.cardapio.modules.cardapio.metrica.enums.TipoRanking;
 import br.com.cardapio.modules.cardapio.metrica.service.IMetricaService;
 import br.com.cardapio.modules.cardapio.publico.dto.response.CardapioPublicoResponseDTO;
 import br.com.cardapio.modules.cardapio.publico.service.ICardapioPublicoService;
@@ -20,6 +29,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
@@ -30,6 +42,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -69,7 +82,13 @@ class MetricasIT {
     @Autowired
     private IVisualizacaoRepository visualizacaoRepository;
     @Autowired
+    private ICategoriaRepository categoriaRepository;
+    @Autowired
     private IMetricaService metricaService;
+    @Autowired
+    private IItemCardapioService itemCardapioService;
+    @Autowired
+    private ICategoriaService categoriaService;
     @Autowired
     private ICardapioPublicoService cardapioPublicoService;
 
@@ -81,12 +100,29 @@ class MetricasIT {
         return restauranteRepository.save(restaurante);
     }
 
-    private ItemCardapio criarItem(final Restaurante restaurante, final String nome) {
+    private ItemCardapio criarItem(final Restaurante restaurante, final String nome, final Categoria... categorias) {
         final ItemCardapio item = new ItemCardapio();
         item.setNome(nome);
         item.setValor(new BigDecimal("10.00"));
         item.setRestaurante(restaurante);
+        item.setCategorias(new HashSet<>(Set.of(categorias)));
         return itemCardapioRepository.save(item);
+    }
+
+    private Categoria criarCategoria(final Restaurante restaurante, final String nome) {
+        final Categoria categoria = new Categoria();
+        categoria.setNome(nome);
+        categoria.setRestaurante(restaurante);
+        return categoriaRepository.save(categoria);
+    }
+
+    private static UsuarioUserDetailsDTO gestor(final Restaurante restaurante) {
+        return new UsuarioUserDetailsDTO(UUID.randomUUID(), "G", "g@x.com", "h",
+                StatusUsuario.ATIVO, "Gestor Restaurante", restaurante.getId(), true, Set.of());
+    }
+
+    private static List<String> nomes(final Page<RankingItemResponseDTO> pagina) {
+        return pagina.getContent().stream().map(RankingItemResponseDTO::nome).toList();
     }
 
     private void curtir(final Restaurante restaurante, final ItemCardapio item, final LocalDateTime quando, final boolean removida) {
@@ -119,25 +155,95 @@ class MetricasIT {
         visualizacao.setOcorridoEm(segunda10h);
         visualizacaoRepository.save(visualizacao);
 
-        final UsuarioUserDetailsDTO gestor = new UsuarioUserDetailsDTO(UUID.randomUUID(), "G", "g@x.com", "h",
-                StatusUsuario.ATIVO, "Gestor Restaurante", restaurante.getId(), true, Set.of());
-        final MetricasResponseDTO metricas = metricaService.findMetricas(
-                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31), null, gestor);
+        final UsuarioUserDetailsDTO gestor = gestor(restaurante);
+        final LocalDate de = LocalDate.of(2026, 10, 1);
+        final LocalDate ate = LocalDate.of(2026, 10, 31);
+        final MetricasResponseDTO metricas = metricaService.findMetricas(de, ate, null, gestor);
 
         assertThat(metricas.resumo().curtidas()).isEqualTo(2);
         assertThat(metricas.resumo().quasePedidos()).isEqualTo(1);
+        assertThat(metricas.resumo().visualizacoes()).isEqualTo(1);
         assertThat(metricas.resumo().tempoTotalMs()).isEqualTo(4000);
-        assertThat(metricas.maisCurtidos()).singleElement()
-                .satisfies(c -> assertThat(c.nome()).isEqualTo("Café"))
-                .satisfies(c -> assertThat(c.total()).isEqualTo(2));
-        assertThat(metricas.quasePedidos()).singleElement().satisfies(c -> assertThat(c.nome()).isEqualTo("Bolo"));
-        assertThat(metricas.tempoPorItem()).hasSize(2);
-        assertThat(metricas.tempoPorItem().getFirst().nome()).isEqualTo("Bolo");
         assertThat(metricas.curtidasPorHorario()).containsExactly(new MetricasResponseDTO.ContagemHorario(1, 10, 2));
 
-        final MetricasResponseDTO soBolo = metricaService.findMetricas(
-                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31), bolo.getId(), gestor);
+        final PageRequest pagina = PageRequest.of(0, 10);
+        assertThat(metricaService.findRanking(TipoRanking.CURTIDOS, de, ate, null, OrdemRanking.MAIOR, pagina, gestor).getContent())
+                .singleElement()
+                .satisfies(r -> assertThat(r.nome()).isEqualTo("Café"))
+                .satisfies(r -> assertThat(r.valor()).isEqualTo(2));
+        assertThat(metricaService.findRanking(TipoRanking.QUASE_PEDIDOS, de, ate, null, OrdemRanking.MAIOR, pagina, gestor).getContent())
+                .singleElement().satisfies(r -> assertThat(r.nome()).isEqualTo("Bolo"));
+        // Tempo: todos os itens, inclusive o sem visualização.
+        final Page<RankingItemResponseDTO> tempo = metricaService.findRanking(TipoRanking.TEMPO, de, ate, null, OrdemRanking.MAIOR, pagina, gestor);
+        assertThat(nomes(tempo)).containsExactly("Bolo", "Café");
+        assertThat(tempo.getContent().getFirst())
+                .satisfies(r -> assertThat(r.valor()).isEqualTo(4000))
+                .satisfies(r -> assertThat(r.visualizacoes()).isEqualTo(1));
+
+        final MetricasResponseDTO soBolo = metricaService.findMetricas(de, ate, bolo.getId(), gestor);
         assertThat(soBolo.curtidasPorHorario()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Ranking: filtra por categoria, ordena por maior, menor e nome (pt-BR) e pagina sem repetir")
+    void findRanking_CategoriaOrdemEPagina_DevolveFatiaCerta() {
+        final Restaurante restaurante = criarRestaurante(true);
+        final Categoria bebidas = criarCategoria(restaurante, "Bebidas");
+        final ItemCardapio suco = criarItem(restaurante, "Suco", bebidas);
+        final ItemCardapio cha = criarItem(restaurante, "Chá", bebidas);
+        final ItemCardapio agua = criarItem(restaurante, "Água", bebidas);
+        final ItemCardapio bolo = criarItem(restaurante, "Bolo");
+        final LocalDateTime quando = LocalDateTime.of(2026, 10, 12, 10, 0);
+        for (int i = 0; i < 3; i++) curtir(restaurante, suco, quando, false);
+        for (int i = 0; i < 2; i++) curtir(restaurante, cha, quando, false);
+        curtir(restaurante, agua, quando, false);
+        // Fora da categoria: não entra mesmo sendo o mais curtido.
+        for (int i = 0; i < 9; i++) curtir(restaurante, bolo, quando, false);
+
+        final UsuarioUserDetailsDTO gestor = gestor(restaurante);
+        final LocalDate de = LocalDate.of(2026, 10, 1);
+        final LocalDate ate = LocalDate.of(2026, 10, 31);
+
+        final Page<RankingItemResponseDTO> primeira = metricaService.findRanking(
+                TipoRanking.CURTIDOS, de, ate, bebidas.getId(), OrdemRanking.MAIOR, PageRequest.of(0, 2), gestor);
+        assertThat(primeira.getTotalElements()).isEqualTo(3);
+        assertThat(nomes(primeira)).containsExactly("Suco", "Chá");
+        assertThat(nomes(metricaService.findRanking(
+                TipoRanking.CURTIDOS, de, ate, bebidas.getId(), OrdemRanking.MAIOR, PageRequest.of(1, 2), gestor)))
+                .containsExactly("Água");
+        assertThat(nomes(metricaService.findRanking(
+                TipoRanking.CURTIDOS, de, ate, bebidas.getId(), OrdemRanking.MENOR, PageRequest.of(0, 10), gestor)))
+                .containsExactly("Água", "Chá", "Suco");
+        // "Água" antes de "Bolo": a ordem alfabética ignora o acento.
+        assertThat(nomes(metricaService.findRanking(
+                TipoRanking.TEMPO, de, ate, null, OrdemRanking.NOME, PageRequest.of(0, 10), gestor)))
+                .containsExactly("Água", "Bolo", "Chá", "Suco");
+        assertThat(metricaService.findRanking(
+                TipoRanking.TEMPO, de, ate, bebidas.getId(), OrdemRanking.NOME, PageRequest.of(0, 10), gestor).getTotalElements())
+                .isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("Itens e categorias paginados: filtro por várias categorias sem repetir o item que está em duas")
+    void findItensCardapioPagina_FiltroPorCategorias_PaginaSemRepetir() {
+        final Restaurante restaurante = criarRestaurante(true);
+        final Categoria bebidas = criarCategoria(restaurante, "Bebidas");
+        final Categoria doces = criarCategoria(restaurante, "Doces");
+        criarItem(restaurante, "Milkshake", bebidas, doces);
+        criarItem(restaurante, "Suco", bebidas);
+        criarItem(restaurante, "Pudim", doces);
+        criarItem(restaurante, "Picanha");
+        final UsuarioUserDetailsDTO gestor = gestor(restaurante);
+        final Sort ordem = Sort.by("ordem", "nome", "id");
+
+        final Page<ItemCardapioResponseDTO> filtrados = itemCardapioService.findItensCardapioPagina(
+                List.of(bebidas.getId(), doces.getId()), PageRequest.of(0, 2, ordem), gestor);
+        assertThat(filtrados.getTotalElements()).isEqualTo(3);
+        assertThat(filtrados.getContent()).extracting(ItemCardapioResponseDTO::nome).containsExactly("Milkshake", "Pudim");
+        assertThat(itemCardapioService.findItensCardapioPagina(List.of(), PageRequest.of(0, 21, ordem), gestor).getTotalElements())
+                .isEqualTo(4);
+        assertThat(categoriaService.findCategoriasPagina(PageRequest.of(1, 1, ordem), gestor).getContent())
+                .extracting(CategoriaResponseDTO::nome).containsExactly("Doces");
     }
 
     @Test
