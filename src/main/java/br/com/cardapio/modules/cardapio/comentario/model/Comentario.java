@@ -45,10 +45,7 @@ public class Comentario extends PersistenceEntity {
     @EqualsAndHashCode.Exclude
     private Cliente cliente;
 
-    /**
-     * Preenchido pelo service com {@code LocalDateTime.now()} (horário de Brasília, como as curtidas): o relógio do
-     * {@code @CreationTimestamp} nasce antes do {@code SpringTimezoneConfig} e gravaria em UTC — e a hora aparece na tela.
-     */
+    /** Preenchido pelo service com {@code LocalDateTime.now()}: a resposta do POST já sai com a data, sem esperar o flush. */
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 }
