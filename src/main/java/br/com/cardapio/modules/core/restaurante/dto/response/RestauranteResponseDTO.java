@@ -1,5 +1,6 @@
 package br.com.cardapio.modules.core.restaurante.dto.response;
 
+import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.VideoResponseDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -49,6 +50,26 @@ public record RestauranteResponseDTO(
         @Schema(description = "Cor de destaque do cardápio (ausente = padrão)", example = "#e9b872")
         @JsonProperty("corDestaque")
         String corDestaque,
+
+        @Schema(description = "Caminho da logo do cabeçalho no storage")
+        @JsonProperty("logoCabecalhoPath")
+        String logoCabecalhoPath,
+
+        @Schema(description = "URL da logo do cabeçalho")
+        @JsonProperty("logoCabecalhoUrl")
+        String logoCabecalhoUrl,
+
+        @Schema(description = "Vídeo de fundo da capa")
+        @JsonProperty("video")
+        VideoResponseDTO video,
+
+        @Schema(description = "WhatsApp com DDD, só dígitos", example = "74999998888")
+        @JsonProperty("whatsapp")
+        String whatsapp,
+
+        @Schema(description = "Usuário do Instagram, sem o @", example = "blackbullirece")
+        @JsonProperty("instagram")
+        String instagram,
 
         @Schema(description = "Se o cardápio está no ar", example = "true")
         @JsonProperty("ativo")

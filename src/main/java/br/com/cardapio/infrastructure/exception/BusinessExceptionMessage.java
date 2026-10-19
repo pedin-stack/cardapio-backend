@@ -24,9 +24,11 @@ public enum BusinessExceptionMessage {
     CAMINHO_ARQUIVO_INVALIDO("O caminho do arquivo é inválido.", HttpStatus.BAD_REQUEST),
     TIPO_ARQUIVO_NAO_SUPORTADO("Tipo de arquivo não suportado.", HttpStatus.BAD_REQUEST),
     CATEGORIA_INVALIDA("Uma ou mais categorias informadas não pertencem ao restaurante.", HttpStatus.BAD_REQUEST),
+    ITEM_INVALIDO("Um ou mais itens informados não pertencem ao restaurante.", HttpStatus.BAD_REQUEST),
 
     // 401 ------------------------------------------------------------------
     INVALID_CREDENTIALS("E-mail ou senha inválidos.", HttpStatus.UNAUTHORIZED),
+    CLIENTE_NAO_IDENTIFICADO("Identifique-se para continuar.", HttpStatus.UNAUTHORIZED),
 
     // 403 ------------------------------------------------------------------
     UNAUTHORIZED("Acesso negado.", HttpStatus.FORBIDDEN),

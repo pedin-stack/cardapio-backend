@@ -1,5 +1,6 @@
 package br.com.cardapio.modules.cardapio.publico.dto.response;
 
+import br.com.cardapio.modules.cardapio.adicional.dto.response.AdicionalResponseDTO;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.Especificacao;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -54,5 +55,21 @@ public record ItemPublicoResponseDTO(
 
         @Schema(description = "Pôster do vídeo")
         @JsonProperty("videoPosterUrl")
-        String videoPosterUrl
+        String videoPosterUrl,
+
+        @Schema(description = "Adicionais pagos que o cliente pode somar ao item")
+        @JsonProperty("adicionais")
+        List<AdicionalResponseDTO> adicionais,
+
+        @Schema(description = "Média das estrelas, com uma casa (ausente sem avaliações)", example = "4.6")
+        @JsonProperty("avaliacaoMedia")
+        Double avaliacaoMedia,
+
+        @Schema(description = "Quantidade de avaliações", example = "23")
+        @JsonProperty("avaliacoes")
+        long avaliacoes,
+
+        @Schema(description = "Quantidade de comentários", example = "8")
+        @JsonProperty("comentarios")
+        long comentarios
 ) {}

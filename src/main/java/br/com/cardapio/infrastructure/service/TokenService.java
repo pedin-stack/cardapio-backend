@@ -9,14 +9,18 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 /**
- * Emite e valida o JWT (HMAC256, subject = e-mail).
+ * Emite e valida o JWT (HMAC256): a sessão do gestor (subject = e-mail) e o token do cliente do cardápio público.
  */
 @Service
 public class TokenService {
 
     private static final String ISSUER = "cardapio-api";
+    private static final String AUDIENCIA_CLIENTE = "cliente";
+    /** O cliente fica identificado naquele navegador por um ano (não há senha para pedir de novo). */
+    private static final long VALIDADE_CLIENTE_DIAS = 365;
 
     @Value("${api.security.token.secret}")
     private String secretKey;
@@ -52,6 +56,35 @@ public class TokenService {
         try {
             return JWT.require(algorithm).withIssuer(ISSUER).build().verify(token).getSubject();
         } catch (final JWTVerificationException exception) {
+            return null;
+        }
+    }
+
+    /**
+     * Token do cliente identificado no cardápio público (subject = id do cliente). A audiência própria impede que
+     * o token de sessão do gestor valha aqui (e vice-versa: no JWTLoginFilter o subject não é um e-mail cadastrado).
+     */
+    public String generateTokenCliente(final UUID clienteId) {
+        return JWT.create()
+                .withSubject(clienteId.toString())
+                .withIssuer(ISSUER)
+                .withAudience(AUDIENCIA_CLIENTE)
+                .withIssuedAt(Instant.now())
+                .withExpiresAt(Instant.now().plus(VALIDADE_CLIENTE_DIAS, ChronoUnit.DAYS))
+                .sign(algorithm);
+    }
+
+    /**
+     * @return o id do cliente se o token for válido e de cliente, ou {@code null} caso contrário.
+     */
+    public UUID validateTokenCliente(final String token) {
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(JWT.require(algorithm).withIssuer(ISSUER).withAudience(AUDIENCIA_CLIENTE).build()
+                    .verify(token).getSubject());
+        } catch (final JWTVerificationException | IllegalArgumentException exception) {
             return null;
         }
     }

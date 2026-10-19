@@ -39,5 +39,25 @@ public record RestaurantePublicoResponseDTO(
 
         @Schema(description = "Cor de destaque do cardápio (ausente = padrão)", example = "#e9b872")
         @JsonProperty("corDestaque")
-        String corDestaque
+        String corDestaque,
+
+        @Schema(description = "URL da logo horizontal do cabeçalho")
+        @JsonProperty("logoCabecalhoUrl")
+        String logoCabecalhoUrl,
+
+        @Schema(description = "Playlist HLS do vídeo de fundo da capa (só quando pronto)")
+        @JsonProperty("videoHlsUrl")
+        String videoHlsUrl,
+
+        @Schema(description = "Pôster do vídeo da capa")
+        @JsonProperty("videoPosterUrl")
+        String videoPosterUrl,
+
+        @Schema(description = "WhatsApp com DDD, só dígitos", example = "74999998888")
+        @JsonProperty("whatsapp")
+        String whatsapp,
+
+        @Schema(description = "Usuário do Instagram, sem o @", example = "blackbullirece")
+        @JsonProperty("instagram")
+        String instagram
 ) {}

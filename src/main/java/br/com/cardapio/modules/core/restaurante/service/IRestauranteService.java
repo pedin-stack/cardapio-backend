@@ -2,8 +2,8 @@ package br.com.cardapio.modules.core.restaurante.service;
 
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.exception.BusinessException;
+import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteAparenciaRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteAtualizarRequestDTO;
-import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteCorRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteStatusRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.response.RestauranteResponseDTO;
@@ -67,11 +67,12 @@ public interface IRestauranteService {
     RestauranteResponseDTO findRestauranteLogado(UsuarioUserDetailsDTO usuarioLogado);
 
     /**
-     * Gestor: muda a cor do cardápio do próprio restaurante (o id vem da sessão).
+     * Gestor: muda a aparência do próprio cardápio (cor, logo do cabeçalho, vídeo da capa e redes sociais; o id vem
+     * da sessão). Vídeo novo dispara a transcodificação HLS depois do commit.
      *
-     * @throws BusinessException {@code NOT_FOUND}
+     * @throws BusinessException {@code NOT_FOUND} ou caminho de arquivo fora da pasta do restaurante (400)
      */
-    RestauranteResponseDTO updateCorDestaqueRestauranteLogado(UsuarioUserDetailsDTO usuarioLogado, RestauranteCorRequestDTO dto);
+    RestauranteResponseDTO updateAparenciaRestauranteLogado(UsuarioUserDetailsDTO usuarioLogado, RestauranteAparenciaRequestDTO dto);
 
     /**
      * Exclui o restaurante, seu gestor e todo o cardápio/métricas (FKs com ON DELETE CASCADE).

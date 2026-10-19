@@ -2,8 +2,8 @@ package br.com.cardapio.modules.core.restaurante.controller;
 
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.util.ResultError;
+import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteAparenciaRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteAtualizarRequestDTO;
-import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteCorRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteStatusRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.response.RestauranteResponseDTO;
@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * CRUD de restaurantes da plataforma (super admin) e a cor do cardápio (gestor, só o próprio).
+ * CRUD de restaurantes da plataforma (super admin) e a aparência do cardápio (gestor, só o próprio).
  */
 @RestController
 @RequestMapping("/api/v1/core/restaurantes")
@@ -154,23 +154,25 @@ public class RestauranteController {
     }
 
     /**
-     * Rota: PUT /api/v1/core/restaurantes/meu-restaurante/cor-destaque
+     * Rota: PUT /api/v1/core/restaurantes/meu-restaurante/aparencia
      */
-    @Operation(summary = "Cor do meu cardápio", description = "O gestor muda a cor de destaque do próprio cardápio (o restaurante vem da sessão).")
+    @Operation(summary = "Aparência do meu cardápio",
+            description = "O gestor muda cor, logo do cabeçalho, vídeo da capa e redes sociais do próprio cardápio (o restaurante vem da sessão).")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Cor atualizada",
+            @ApiResponse(responseCode = "200", description = "Aparência atualizada",
                     content = @Content(schema = @Schema(implementation = RestauranteResponseDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Cor fora do formato #rrggbb")
+            @ApiResponse(responseCode = "400", description = "Arquivo fora da pasta do restaurante"),
+            @ApiResponse(responseCode = "422", description = "Dados de entrada inválidos")
     })
     @PreAuthorize("hasAuthority('CORE_RESTAURANTE_ATUALIZAR_PROPRIO')")
-    @PutMapping(value = "/meu-restaurante/cor-destaque", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> updateCorDestaqueRestauranteLogado(@RequestBody @Valid final RestauranteCorRequestDTO dto,
-                                                                final BindingResult result,
-                                                                @Parameter(hidden = true) @AuthenticationPrincipal final UsuarioUserDetailsDTO usuarioLogado) {
+    @PutMapping(value = "/meu-restaurante/aparencia", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateAparenciaRestauranteLogado(@RequestBody @Valid final RestauranteAparenciaRequestDTO dto,
+                                                              final BindingResult result,
+                                                              @Parameter(hidden = true) @AuthenticationPrincipal final UsuarioUserDetailsDTO usuarioLogado) {
         if (result.hasErrors()) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(ResultError.getResultErrors(result));
         }
-        return ResponseEntity.ok(restauranteService.updateCorDestaqueRestauranteLogado(usuarioLogado, dto));
+        return ResponseEntity.ok(restauranteService.updateAparenciaRestauranteLogado(usuarioLogado, dto));
     }
 
     /**

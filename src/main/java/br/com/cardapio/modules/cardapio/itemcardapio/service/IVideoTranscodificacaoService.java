@@ -3,7 +3,7 @@ package br.com.cardapio.modules.cardapio.itemcardapio.service;
 import java.util.UUID;
 
 /**
- * Contrato da transcodificação do vídeo do item para HLS (chunks de 2 s, 480p e 720p).
+ * Contrato da transcodificação de vídeo para HLS (chunks de 2 s, 480p e 720p): do item e da capa do restaurante.
  */
 public interface IVideoTranscodificacaoService {
 
@@ -15,4 +15,12 @@ public interface IVideoTranscodificacaoService {
      * @param caminhoOriginal caminho do original no storage
      */
     void transcodeVideoItem(UUID itemId, String caminhoOriginal);
+
+    /**
+     * Igual a {@link #transcodeVideoItem}, gravando o resultado no vídeo de fundo da capa do restaurante.
+     *
+     * @param restauranteId   restaurante dono do vídeo
+     * @param caminhoOriginal caminho do original no storage
+     */
+    void transcodeVideoRestaurante(UUID restauranteId, String caminhoOriginal);
 }

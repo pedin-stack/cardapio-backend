@@ -1,8 +1,11 @@
 package br.com.cardapio.modules.core.restaurante.model;
 
 import br.com.cardapio.infrastructure.model.PersistenceEntity;
+import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -48,6 +51,32 @@ public class Restaurante extends PersistenceEntity {
     /** Hex {@code #rrggbb} do destaque no cardápio público; null = cor padrão. */
     @Column(name = "cor_destaque", length = 7)
     private String corDestaque;
+
+    /** Logo horizontal do cabeçalho do cardápio, enviada pelo gestor (pasta do restaurante). */
+    @Column(name = "logo_cabecalho_path", length = 500)
+    private String logoCabecalhoPath;
+
+    /** Vídeo de fundo da capa: mesmo ciclo do vídeo do item (original no bucket → HLS no disco). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "video_status", nullable = false, length = 20)
+    private StatusVideo videoStatus = StatusVideo.SEM_VIDEO;
+
+    @Column(name = "video_original_path", length = 500)
+    private String videoOriginalPath;
+
+    @Column(name = "video_hls_path", length = 500)
+    private String videoHlsPath;
+
+    @Column(name = "video_poster_path", length = 500)
+    private String videoPosterPath;
+
+    /** DDD + número, só dígitos (o front monta o link wa.me com o 55). */
+    @Column(name = "whatsapp", length = 11)
+    private String whatsapp;
+
+    /** Usuário do Instagram, sem o @. */
+    @Column(name = "instagram", length = 30)
+    private String instagram;
 
     @Column(name = "ativo", nullable = false)
     private boolean ativo = true;

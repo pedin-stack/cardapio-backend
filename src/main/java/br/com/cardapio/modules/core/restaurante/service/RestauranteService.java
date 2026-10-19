@@ -3,19 +3,24 @@ package br.com.cardapio.modules.core.restaurante.service;
 import br.com.cardapio.config.cache.RedisCacheConfig;
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoArquivoService;
+import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoVideoService;
 import br.com.cardapio.infrastructure.armazenamento.SupabaseArmazenamentoService;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
+import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.VideoResponseDTO;
+import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
+import br.com.cardapio.modules.cardapio.itemcardapio.event.VideoItemDescartadoEvent;
 import br.com.cardapio.modules.cardapio.shared.util.RestauranteLogadoUtil;
 import br.com.cardapio.modules.core.midia.service.IMidiaService;
 import br.com.cardapio.modules.core.perfil.model.Perfil;
 import br.com.cardapio.modules.core.perfil.repository.IPerfilRepository;
+import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteAparenciaRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteAtualizarRequestDTO;
-import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteCorRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.request.RestauranteStatusRequestDTO;
 import br.com.cardapio.modules.core.restaurante.dto.response.RestauranteResponseDTO;
 import br.com.cardapio.modules.core.restaurante.event.RestauranteExcluidoEvent;
+import br.com.cardapio.modules.core.restaurante.event.VideoRestauranteEnviadoEvent;
 import br.com.cardapio.modules.core.restaurante.model.Restaurante;
 import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
 import br.com.cardapio.modules.core.usuario.model.Usuario;
@@ -32,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -51,6 +57,7 @@ public class RestauranteService implements IRestauranteService {
     private final IUsuarioRepository usuarioRepository;
     private final IPerfilRepository perfilRepository;
     private final IArmazenamentoArquivoService armazenamentoArquivoService;
+    private final IArmazenamentoVideoService armazenamentoVideoService;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -58,9 +65,9 @@ public class RestauranteService implements IRestauranteService {
     @Transactional(readOnly = true)
     public Page<RestauranteResponseDTO> findAllRestaurantes(final String nome, final Pageable pageable) {
         final Page<Restaurante> pagina = restauranteRepository.findByNomeContainingIgnoreCase(nome == null ? "" : nome.trim(), pageable);
-        // Logo e capa da página inteira numa só assinatura.
+        // Logos e capa da página inteira numa só assinatura.
         final Map<String, String> urls = armazenamentoArquivoService.findUrlsAssinadas(pagina.getContent().stream()
-                .flatMap(restaurante -> Stream.of(restaurante.getLogoPath(), restaurante.getCapaPath()))
+                .flatMap(restaurante -> Stream.of(restaurante.getLogoPath(), restaurante.getCapaPath(), restaurante.getLogoCabecalhoPath()))
                 .toList());
         return pagina.map(restaurante -> mapToRestauranteResponseDTO(restaurante, null, urls));
     }
@@ -144,11 +151,25 @@ public class RestauranteService implements IRestauranteService {
 
     @Override
     @Transactional
-    public RestauranteResponseDTO updateCorDestaqueRestauranteLogado(final UsuarioUserDetailsDTO usuarioLogado,
-                                                                      final RestauranteCorRequestDTO dto) {
+    public RestauranteResponseDTO updateAparenciaRestauranteLogado(final UsuarioUserDetailsDTO usuarioLogado,
+                                                                    final RestauranteAparenciaRequestDTO dto) {
         // O restaurante vem da sessão, nunca do corpo: o gestor só muda o próprio.
         final Restaurante restaurante = findRestauranteByIdOrThrow(RestauranteLogadoUtil.findRestauranteIdOrThrow(usuarioLogado));
+        final String pasta = IMidiaService.findPastaRestaurante(restaurante.getId());
+        final String logoCabecalho = vazioParaNulo(dto.logoCabecalhoPath());
+        final String video = vazioParaNulo(dto.videoCaminho());
+        // Logo e vídeo só podem vir dos uploads do próprio gestor.
+        for (final String caminho : new String[]{logoCabecalho, video}) {
+            if (caminho != null) {
+                SupabaseArmazenamentoService.validateCaminhoOrThrow(caminho, pasta);
+            }
+        }
+
         restaurante.setCorDestaque(normalizarCor(dto.corDestaque()));
+        restaurante.setLogoCabecalhoPath(logoCabecalho);
+        restaurante.setWhatsapp(vazioParaNulo(dto.whatsapp()));
+        restaurante.setInstagram(vazioParaNulo(dto.instagram()));
+        updateVideo(restaurante, video);
         return mapToRestauranteResponseDTO(restaurante, null);
     }
 
@@ -197,12 +218,37 @@ public class RestauranteService implements IRestauranteService {
         return cor == null || cor.isBlank() ? null : cor.toLowerCase();
     }
 
+    private static String vazioParaNulo(final String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
+    }
+
+    /**
+     * Vídeo da capa, com a mesma regra do vídeo do item: novo → PROCESSANDO + evento (transcodifica após o commit);
+     * removido → SEM_VIDEO; o mesmo de antes → nada muda (salvar a aparência não reprocessa).
+     */
+    private void updateVideo(final Restaurante restaurante, final String novo) {
+        if (Objects.equals(novo, restaurante.getVideoOriginalPath())) {
+            return;
+        }
+        if (restaurante.getVideoHlsPath() != null) {
+            eventPublisher.publishEvent(new VideoItemDescartadoEvent(restaurante.getVideoHlsPath()));
+        }
+        restaurante.setVideoOriginalPath(novo);
+        restaurante.setVideoHlsPath(null);
+        restaurante.setVideoPosterPath(null);
+        restaurante.setVideoStatus(novo == null ? StatusVideo.SEM_VIDEO : StatusVideo.PROCESSANDO);
+        if (novo != null) {
+            eventPublisher.publishEvent(new VideoRestauranteEnviadoEvent(restaurante.getId(), novo));
+        }
+    }
+
     // ---- Mappers Privados ----
 
     private RestauranteResponseDTO mapToRestauranteResponseDTO(final Restaurante restaurante, final Usuario gestor) {
         final List<String> caminhos = new ArrayList<>();
         caminhos.add(restaurante.getLogoPath());
         caminhos.add(restaurante.getCapaPath());
+        caminhos.add(restaurante.getLogoCabecalhoPath());
         return mapToRestauranteResponseDTO(restaurante, gestor, armazenamentoArquivoService.findUrlsAssinadas(caminhos));
     }
 
@@ -219,6 +265,15 @@ public class RestauranteService implements IRestauranteService {
                 restaurante.getCapaPath(),
                 restaurante.getCapaPath() != null ? urls.get(restaurante.getCapaPath()) : null,
                 restaurante.getCorDestaque(),
+                restaurante.getLogoCabecalhoPath(),
+                restaurante.getLogoCabecalhoPath() != null ? urls.get(restaurante.getLogoCabecalhoPath()) : null,
+                new VideoResponseDTO(
+                        restaurante.getVideoStatus(),
+                        restaurante.getVideoOriginalPath(),
+                        armazenamentoVideoService.findUrlPublica(restaurante.getVideoHlsPath()),
+                        armazenamentoVideoService.findUrlPublica(restaurante.getVideoPosterPath())),
+                restaurante.getWhatsapp(),
+                restaurante.getInstagram(),
                 restaurante.isAtivo(),
                 restaurante.getCriadoEm(),
                 gestor != null ? gestor.getNome() : null,

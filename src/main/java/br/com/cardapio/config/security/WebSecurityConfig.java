@@ -56,6 +56,12 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.PUT, CARDAPIO_PUBLICO + "/itens/item/*/curtida").permitAll()
                         .requestMatchers(HttpMethod.DELETE, CARDAPIO_PUBLICO + "/itens/item/*/curtida").permitAll()
                         .requestMatchers(HttpMethod.POST, CARDAPIO_PUBLICO + "/visualizacoes").permitAll()
+                        // Identificação do cliente e comentários (ler é livre; escrever e avaliar exigem o
+                        // X-Cliente-Token, conferido no service)
+                        .requestMatchers(HttpMethod.POST, CARDAPIO_PUBLICO + "/clientes/cliente").permitAll()
+                        .requestMatchers(HttpMethod.GET, CARDAPIO_PUBLICO + "/itens/item/*/comentarios").permitAll()
+                        .requestMatchers(HttpMethod.POST, CARDAPIO_PUBLICO + "/itens/item/*/comentarios/comentario").permitAll()
+                        .requestMatchers(HttpMethod.PUT, CARDAPIO_PUBLICO + "/itens/item/*/avaliacao").permitAll()
                         // Chunks HLS e pôsteres do feed público (servidos do disco pelo WebMvcConfig)
                         .requestMatchers(HttpMethod.GET, "/videos/**").permitAll()
                         .anyRequest().authenticated())

@@ -37,6 +37,10 @@ public interface IItemCardapioRepository extends JpaRepository<ItemCardapio, UUI
 
     boolean existsByIdAndRestauranteIdAndAtivoTrue(UUID id, UUID restauranteId);
 
+    boolean existsByIdAndRestauranteId(UUID id, UUID restauranteId);
+
+    List<ItemCardapio> findByIdInAndRestauranteId(Collection<UUID> ids, UUID restauranteId);
+
     @Query("SELECT i.id FROM ItemCardapio i WHERE i.restaurante.id = :restauranteId AND i.id IN :ids")
     Set<UUID> findIdsByRestauranteIdAndIdIn(@Param("restauranteId") UUID restauranteId, @Param("ids") Set<UUID> ids);
 

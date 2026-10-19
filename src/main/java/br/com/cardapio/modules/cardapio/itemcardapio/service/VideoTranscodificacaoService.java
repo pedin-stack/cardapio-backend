@@ -4,6 +4,7 @@ import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoArquivoService
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoVideoService;
 import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
+import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
- * Transcodifica o vídeo do item em HLS — o "chunking" estilo TikTok do lado do servidor.
+ * Transcodifica o vídeo do item (ou da capa do restaurante) em HLS — o "chunking" estilo TikTok do lado do servidor.
  * <p>
  * O original vira segmentos {@code .ts} de 2 s em duas qualidades (lado menor 480 px ~800 kbps e 720 px ~2,2 Mbps)
  * com keyframe forçado a cada 2 s, para que todo segmento comece num quadro decodificável: o player do feed
@@ -42,6 +43,7 @@ public class VideoTranscodificacaoService implements IVideoTranscodificacaoServi
     private final IArmazenamentoArquivoService armazenamentoArquivoService;
     private final IArmazenamentoVideoService armazenamentoVideoService;
     private final IItemCardapioRepository itemCardapioRepository;
+    private final IRestauranteRepository restauranteRepository;
 
     @Value("${app.video.ffmpeg}")
     private String ffmpeg;
@@ -54,6 +56,23 @@ public class VideoTranscodificacaoService implements IVideoTranscodificacaoServi
 
     @Override
     public void transcodeVideoItem(final UUID itemId, final String caminhoOriginal) {
+        transcode(caminhoOriginal, "do item " + itemId, (status, hls, poster) ->
+                itemCardapioRepository.updateVideoResultado(itemId, caminhoOriginal, status, hls, poster));
+    }
+
+    @Override
+    public void transcodeVideoRestaurante(final UUID restauranteId, final String caminhoOriginal) {
+        transcode(caminhoOriginal, "da capa do restaurante " + restauranteId, (status, hls, poster) ->
+                restauranteRepository.updateVideoResultado(restauranteId, caminhoOriginal, status, hls, poster));
+    }
+
+    /** Grava o resultado no dono do vídeo; devolve as linhas afetadas (0 = o vídeo foi trocado no meio). */
+    @FunctionalInterface
+    private interface AplicarResultado {
+        int aplicar(StatusVideo status, String hlsPath, String posterPath);
+    }
+
+    private void transcode(final String caminhoOriginal, final String dono, final AplicarResultado aplicarResultado) {
         Path pasta = null;
         try {
             pasta = Files.createTempDirectory("video-");
@@ -81,16 +100,15 @@ public class VideoTranscodificacaoService implements IVideoTranscodificacaoServi
                     + "hls/" + UUID.randomUUID() + "/";
             armazenamentoVideoService.saveHls(prefixo, saida);
 
-            final int atualizados = itemCardapioRepository.updateVideoResultado(itemId, caminhoOriginal,
-                    StatusVideo.PRONTO, prefixo + "master.m3u8", prefixo + "poster.jpg");
+            final int atualizados = aplicarResultado.aplicar(StatusVideo.PRONTO, prefixo + "master.m3u8", prefixo + "poster.jpg");
             if (atualizados == 0) {
-                // O gestor trocou/removeu o vídeo (ou excluiu o item) enquanto o FFmpeg rodava: HLS órfão.
+                // O gestor trocou/removeu o vídeo (ou excluiu o dono) enquanto o FFmpeg rodava: HLS órfão.
                 armazenamentoVideoService.deleteHls(prefixo + "master.m3u8");
             }
-            log.info("Vídeo do item {} transcodificado ({} s, áudio={}, aplicado={})", itemId, duracao, temAudio, atualizados > 0);
+            log.info("Vídeo {} transcodificado ({} s, áudio={}, aplicado={})", dono, duracao, temAudio, atualizados > 0);
         } catch (final Exception ex) {
-            log.error("Falha ao transcodificar o vídeo do item {}: {}", itemId, ex.getMessage(), ex);
-            itemCardapioRepository.updateVideoResultado(itemId, caminhoOriginal, StatusVideo.ERRO, null, null);
+            log.error("Falha ao transcodificar o vídeo {}: {}", dono, ex.getMessage(), ex);
+            aplicarResultado.aplicar(StatusVideo.ERRO, null, null);
         } finally {
             apagarPasta(pasta);
             // O original só serve de entrada: com ou sem sucesso, sai do bucket (o gestor reenvia se der ERRO).
