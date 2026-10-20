@@ -51,7 +51,7 @@ import java.util.stream.Stream;
 public class RestauranteService implements IRestauranteService {
 
     /** Slugs que colidem com rotas do front. */
-    private static final Set<String> SLUGS_RESERVADOS = Set.of("login", "painel", "plataforma", "api", "404", "500", "_next");
+    private static final Set<String> SLUGS_RESERVADOS = Set.of("login", "painel", "plataforma", "conheca", "api", "404", "500", "_next");
 
     private final IRestauranteRepository restauranteRepository;
     private final IUsuarioRepository usuarioRepository;
