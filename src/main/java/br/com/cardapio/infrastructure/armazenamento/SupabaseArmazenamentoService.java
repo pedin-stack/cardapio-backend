@@ -8,6 +8,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -131,6 +132,25 @@ public class SupabaseArmazenamentoService implements IArmazenamentoArquivoServic
             restClient.delete().uri(objectPath("/object/", caminho)).retrieve().toBodilessEntity();
         } catch (final RuntimeException ex) {
             log.warn("Não foi possível apagar {} do storage: {}", caminho, ex.getMessage());
+        }
+    }
+
+    /**
+     * O plano gratuito do Supabase pausa o projeto após 7 dias sem uso, e aí nenhuma foto assina. Um list diário no
+     * bucket passa pela API e pelo banco do Storage e mantém o projeto ativo.
+     */
+    // ponytail: ping diário; se a API ficar 7 dias fora do ar, o projeto pausa mesmo assim (plano pago resolve)
+    @Scheduled(cron = "0 0 6 * * *", zone = "America/Sao_Paulo")
+    public void manterProjetoAtivo() {
+        try {
+            restClient.post()
+                    .uri("/object/list/" + bucket)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("prefix", "", "limit", 1))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (final RestClientException ex) {
+            log.warn("Ping do Supabase falhou (o projeto pode ser pausado por inatividade): {}", ex.getMessage());
         }
     }
 
