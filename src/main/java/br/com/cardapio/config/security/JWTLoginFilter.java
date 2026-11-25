@@ -3,7 +3,7 @@ package br.com.cardapio.config.security;
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.exception.ErrorResponse;
 import br.com.cardapio.infrastructure.service.TokenService;
-import br.com.cardapio.infrastructure.service.UserDetailsServiceImpl;
+import br.com.cardapio.modules.core.autenticacao.service.UserDetailsServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

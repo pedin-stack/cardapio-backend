@@ -9,7 +9,7 @@ import br.com.cardapio.modules.cardapio.adicional.model.Adicional;
 import br.com.cardapio.modules.cardapio.adicional.repository.IAdicionalRepository;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
-import br.com.cardapio.modules.cardapio.shared.util.RestauranteLogadoUtil;
+import br.com.cardapio.modules.core.shared.util.RestauranteLogadoUtil;
 import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

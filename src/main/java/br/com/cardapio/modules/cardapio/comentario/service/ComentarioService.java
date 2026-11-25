@@ -10,7 +10,7 @@ import br.com.cardapio.modules.cardapio.comentario.dto.response.ComentarioRespon
 import br.com.cardapio.modules.cardapio.comentario.model.Comentario;
 import br.com.cardapio.modules.cardapio.comentario.repository.IComentarioRepository;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
-import br.com.cardapio.modules.cardapio.shared.util.RestauranteLogadoUtil;
+import br.com.cardapio.modules.core.shared.util.RestauranteLogadoUtil;
 import br.com.cardapio.modules.core.restaurante.model.Restaurante;
 import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
 import lombok.RequiredArgsConstructor;

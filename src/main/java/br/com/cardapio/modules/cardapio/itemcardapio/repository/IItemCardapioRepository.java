@@ -1,6 +1,6 @@
 package br.com.cardapio.modules.cardapio.itemcardapio.repository;
 
-import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
+import br.com.cardapio.modules.core.video.enums.StatusVideo;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

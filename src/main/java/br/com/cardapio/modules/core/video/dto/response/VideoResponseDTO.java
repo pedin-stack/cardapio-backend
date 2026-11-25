@@ -1,6 +1,6 @@
-package br.com.cardapio.modules.cardapio.itemcardapio.dto.response;
+package br.com.cardapio.modules.core.video.dto.response;
 
-import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
+import br.com.cardapio.modules.core.video.enums.StatusVideo;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;

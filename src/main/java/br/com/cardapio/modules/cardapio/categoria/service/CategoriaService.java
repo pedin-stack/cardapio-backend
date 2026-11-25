@@ -7,7 +7,7 @@ import br.com.cardapio.modules.cardapio.categoria.dto.request.CategoriaRequestDT
 import br.com.cardapio.modules.cardapio.categoria.dto.response.CategoriaResponseDTO;
 import br.com.cardapio.modules.cardapio.categoria.model.Categoria;
 import br.com.cardapio.modules.cardapio.categoria.repository.ICategoriaRepository;
-import br.com.cardapio.modules.cardapio.shared.util.RestauranteLogadoUtil;
+import br.com.cardapio.modules.core.shared.util.RestauranteLogadoUtil;
 import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

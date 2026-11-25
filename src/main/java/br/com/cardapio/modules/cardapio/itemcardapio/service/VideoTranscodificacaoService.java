@@ -2,7 +2,7 @@ package br.com.cardapio.modules.cardapio.itemcardapio.service;
 
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoArquivoService;
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoVideoService;
-import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
+import br.com.cardapio.modules.core.video.enums.StatusVideo;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
 import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
 import lombok.RequiredArgsConstructor;

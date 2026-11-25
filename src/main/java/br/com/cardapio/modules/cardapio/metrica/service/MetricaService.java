@@ -7,7 +7,7 @@ import br.com.cardapio.modules.cardapio.metrica.dto.response.MetricasResponseDTO
 import br.com.cardapio.modules.cardapio.metrica.dto.response.RankingItemResponseDTO;
 import br.com.cardapio.modules.cardapio.metrica.enums.OrdemRanking;
 import br.com.cardapio.modules.cardapio.metrica.enums.TipoRanking;
-import br.com.cardapio.modules.cardapio.shared.util.RestauranteLogadoUtil;
+import br.com.cardapio.modules.core.shared.util.RestauranteLogadoUtil;
 import br.com.cardapio.modules.cardapio.visualizacao.repository.IVisualizacaoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

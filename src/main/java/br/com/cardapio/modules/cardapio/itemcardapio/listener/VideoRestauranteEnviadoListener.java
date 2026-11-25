@@ -1,4 +1,4 @@
-package br.com.cardapio.modules.core.restaurante.listener;
+package br.com.cardapio.modules.cardapio.itemcardapio.listener;
 
 import br.com.cardapio.modules.cardapio.itemcardapio.service.IVideoTranscodificacaoService;
 import br.com.cardapio.modules.core.restaurante.event.VideoRestauranteEnviadoEvent;
