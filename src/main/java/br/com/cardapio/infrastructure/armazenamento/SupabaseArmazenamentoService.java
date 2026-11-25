@@ -2,6 +2,7 @@ package br.com.cardapio.infrastructure.armazenamento;
 
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
+import br.com.cardapio.infrastructure.util.CaminhoArquivoUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -25,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 /**
  * Storage do Supabase pela API REST, autenticado com a service-role key.
@@ -42,7 +42,6 @@ import java.util.regex.Pattern;
 @Service
 public class SupabaseArmazenamentoService implements IArmazenamentoArquivoService {
 
-    private static final Pattern CAMINHO_PERMITIDO = Pattern.compile("[A-Za-z0-9._/-]{1,400}");
     private static final long VALIDADE_HORAS = 24;
     private static final Duration CACHE_URL = Duration.ofHours(VALIDADE_HORAS / 2);
     private static final String PREFIXO_CACHE = "url_assinada:";
@@ -68,7 +67,7 @@ public class SupabaseArmazenamentoService implements IArmazenamentoArquivoServic
 
     @Override
     public String createUploadToken(final String caminho) {
-        validateCaminhoOrThrow(caminho);
+        CaminhoArquivoUtil.validateCaminhoOrThrow(caminho);
         try {
             final Map<?, ?> resposta = restClient.post()
                     .uri(objectPath("/object/upload/sign/", caminho))
@@ -90,7 +89,7 @@ public class SupabaseArmazenamentoService implements IArmazenamentoArquivoServic
 
     @Override
     public void downloadArquivo(final String caminho, final Path destino) {
-        validateCaminhoOrThrow(caminho);
+        CaminhoArquivoUtil.validateCaminhoOrThrow(caminho);
         try {
             restClient.get()
                     .uri(objectPath("/object/", caminho))
@@ -108,7 +107,7 @@ public class SupabaseArmazenamentoService implements IArmazenamentoArquivoServic
 
     @Override
     public void saveArquivo(final String caminho, final Path origem, final String tipoConteudo) {
-        validateCaminhoOrThrow(caminho);
+        CaminhoArquivoUtil.validateCaminhoOrThrow(caminho);
         try {
             restClient.post()
                     .uri(objectPath("/object/", caminho))
@@ -128,7 +127,7 @@ public class SupabaseArmazenamentoService implements IArmazenamentoArquivoServic
     @Override
     public void deleteArquivo(final String caminho) {
         try {
-            validateCaminhoOrThrow(caminho);
+            CaminhoArquivoUtil.validateCaminhoOrThrow(caminho);
             restClient.delete().uri(objectPath("/object/", caminho)).retrieve().toBodilessEntity();
         } catch (final RuntimeException ex) {
             log.warn("Não foi possível apagar {} do storage: {}", caminho, ex.getMessage());
@@ -165,7 +164,7 @@ public class SupabaseArmazenamentoService implements IArmazenamentoArquivoServic
         if (distintos.isEmpty()) {
             return Map.of();
         }
-        distintos.forEach(SupabaseArmazenamentoService::validateCaminhoOrThrow);
+        distintos.forEach(CaminhoArquivoUtil::validateCaminhoOrThrow);
 
         final Map<String, String> urls = new HashMap<>(lerCache(distintos));
         final List<String> faltando = distintos.stream().filter(caminho -> !urls.containsKey(caminho)).toList();
@@ -225,29 +224,6 @@ public class SupabaseArmazenamentoService implements IArmazenamentoArquivoServic
             urls.forEach((caminho, url) -> redisTemplate.opsForValue().set(PREFIXO_CACHE + caminho, url, CACHE_URL));
         } catch (final RuntimeException ex) {
             log.warn("Cache de URLs assinadas indisponível: {}", ex.getMessage());
-        }
-    }
-
-    /**
-     * Recusa caminho com segmento vazio, "." ou ".." (o caminho pode vir do cliente ou de dado persistido).
-     */
-    public static void validateCaminhoOrThrow(final String caminho) {
-        // Whitelist: o caminho � concatenado na URL do storage (sem chaves de template, '?', '#', '%' ou '\').
-        if (caminho == null || !CAMINHO_PERMITIDO.matcher(caminho).matches()) {
-            throw new BusinessException(BusinessExceptionMessage.CAMINHO_ARQUIVO_INVALIDO.getMessage());
-        }
-        for (final String segmento : caminho.split("/", -1)) {
-            if (segmento.isEmpty() || ".".equals(segmento) || "..".equals(segmento)) {
-                throw new BusinessException(BusinessExceptionMessage.CAMINHO_ARQUIVO_INVALIDO.getMessage());
-            }
-        }
-    }
-
-    /** Valida o caminho e exige que ele esteja dentro de {@code prefixo} (isolamento por restaurante). */
-    public static void validateCaminhoOrThrow(final String caminho, final String prefixo) {
-        validateCaminhoOrThrow(caminho);
-        if (!caminho.startsWith(prefixo)) {
-            throw new BusinessException(BusinessExceptionMessage.CAMINHO_ARQUIVO_INVALIDO.getMessage());
         }
     }
 }

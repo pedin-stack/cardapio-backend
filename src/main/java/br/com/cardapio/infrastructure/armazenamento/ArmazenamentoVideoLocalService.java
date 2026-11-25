@@ -1,5 +1,6 @@
 package br.com.cardapio.infrastructure.armazenamento;
 
+import br.com.cardapio.infrastructure.util.CaminhoArquivoUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -65,7 +66,7 @@ public class ArmazenamentoVideoLocalService implements IArmazenamentoVideoServic
 
     /** Valida o caminho relativo e garante que ele não escapa do diretório de vídeos. */
     private Path resolverOrThrow(final String relativo) {
-        SupabaseArmazenamentoService.validateCaminhoOrThrow(relativo.replaceAll("/+$", ""));
+        CaminhoArquivoUtil.validateCaminhoOrThrow(relativo.replaceAll("/+$", ""));
         final Path resolvido = diretorio.resolve(relativo).normalize();
         if (!resolvido.startsWith(diretorio)) {
             throw new IllegalArgumentException("Caminho de vídeo fora do diretório: " + relativo);

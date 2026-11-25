@@ -4,7 +4,6 @@ import br.com.cardapio.config.cache.RedisCacheConfig;
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoArquivoService;
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoVideoService;
-import br.com.cardapio.infrastructure.armazenamento.SupabaseArmazenamentoService;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
 import br.com.cardapio.modules.core.video.dto.response.VideoResponseDTO;
@@ -25,6 +24,7 @@ import br.com.cardapio.modules.core.restaurante.model.Restaurante;
 import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
 import br.com.cardapio.modules.core.usuario.model.Usuario;
 import br.com.cardapio.modules.core.usuario.repository.IUsuarioRepository;
+import br.com.cardapio.infrastructure.util.CaminhoArquivoUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
@@ -161,7 +161,7 @@ public class RestauranteService implements IRestauranteService {
         // Logo e vídeo só podem vir dos uploads do próprio gestor.
         for (final String caminho : new String[]{logoCabecalho, video}) {
             if (caminho != null) {
-                SupabaseArmazenamentoService.validateCaminhoOrThrow(caminho, pasta);
+                CaminhoArquivoUtil.validateCaminhoOrThrow(caminho, pasta);
             }
         }
 
@@ -208,7 +208,7 @@ public class RestauranteService implements IRestauranteService {
     private void validateImagensOrThrow(final String logoPath, final String capaPath) {
         for (final String caminho : new String[]{logoPath, capaPath}) {
             if (caminho != null && !caminho.isBlank()) {
-                SupabaseArmazenamentoService.validateCaminhoOrThrow(caminho, IMidiaService.PASTA_PLATAFORMA);
+                CaminhoArquivoUtil.validateCaminhoOrThrow(caminho, IMidiaService.PASTA_PLATAFORMA);
             }
         }
     }
