@@ -1,6 +1,6 @@
 package br.com.cardapio.modules.core.restaurante.repository;
 
-import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
+import br.com.cardapio.modules.core.video.enums.StatusVideo;
 import br.com.cardapio.modules.core.restaurante.model.Restaurante;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -15,7 +15,7 @@ import br.com.cardapio.modules.cardapio.categoria.service.CategoriaService;
 import br.com.cardapio.modules.cardapio.comentario.repository.IComentarioRepository;
 import br.com.cardapio.modules.cardapio.comentario.repository.projection.ItemComentariosProjection;
 import br.com.cardapio.modules.cardapio.curtida.repository.ICurtidaRepository;
-import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
+import br.com.cardapio.modules.core.video.enums.StatusVideo;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
 import br.com.cardapio.modules.cardapio.publico.dto.response.CardapioPublicoResponseDTO;

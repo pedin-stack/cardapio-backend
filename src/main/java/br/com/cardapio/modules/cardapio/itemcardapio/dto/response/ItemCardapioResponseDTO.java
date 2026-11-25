@@ -1,5 +1,6 @@
 package br.com.cardapio.modules.cardapio.itemcardapio.dto.response;
 
+import br.com.cardapio.modules.core.video.dto.response.VideoResponseDTO;
 import br.com.cardapio.modules.cardapio.categoria.dto.response.CategoriaResponseDTO;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.Especificacao;
 import com.fasterxml.jackson.annotation.JsonInclude;

@@ -1,4 +1,4 @@
-package br.com.cardapio.modules.cardapio.itemcardapio.enums;
+package br.com.cardapio.modules.core.video.enums;
 
 /**
  * Situação do vídeo do item no pipeline de transcodificação HLS.

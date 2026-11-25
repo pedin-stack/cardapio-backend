@@ -1,7 +1,7 @@
-package br.com.cardapio.modules.cardapio.itemcardapio.listener;
+package br.com.cardapio.modules.core.video.listener;
 
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoVideoService;
-import br.com.cardapio.modules.cardapio.itemcardapio.event.VideoItemDescartadoEvent;
+import br.com.cardapio.modules.core.video.event.VideoItemDescartadoEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;

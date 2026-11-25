@@ -3,7 +3,6 @@ package br.com.cardapio.modules.cardapio.itemcardapio.service;
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoArquivoService;
 import br.com.cardapio.infrastructure.armazenamento.IArmazenamentoVideoService;
-import br.com.cardapio.infrastructure.armazenamento.SupabaseArmazenamentoService;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
 import br.com.cardapio.modules.cardapio.categoria.model.Categoria;
@@ -12,16 +11,17 @@ import br.com.cardapio.modules.cardapio.categoria.service.CategoriaService;
 import br.com.cardapio.modules.cardapio.itemcardapio.dto.request.ItemCardapioRequestDTO;
 import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.ItemCardapioResponseDTO;
 import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.MidiaResponseDTO;
-import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.VideoResponseDTO;
-import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
-import br.com.cardapio.modules.cardapio.itemcardapio.event.VideoItemDescartadoEvent;
+import br.com.cardapio.modules.core.video.dto.response.VideoResponseDTO;
+import br.com.cardapio.modules.core.video.enums.StatusVideo;
+import br.com.cardapio.modules.core.video.event.VideoItemDescartadoEvent;
 import br.com.cardapio.modules.cardapio.itemcardapio.event.VideoItemEnviadoEvent;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.Especificacao;
 import br.com.cardapio.modules.cardapio.itemcardapio.model.ItemCardapio;
 import br.com.cardapio.modules.cardapio.itemcardapio.repository.IItemCardapioRepository;
-import br.com.cardapio.modules.cardapio.shared.util.RestauranteLogadoUtil;
+import br.com.cardapio.modules.core.shared.util.RestauranteLogadoUtil;
 import br.com.cardapio.modules.core.midia.service.IMidiaService;
 import br.com.cardapio.modules.core.restaurante.repository.IRestauranteRepository;
+import br.com.cardapio.infrastructure.util.CaminhoArquivoUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -131,9 +131,9 @@ public class ItemCardapioService implements IItemCardapioService {
         if (imagens.size() > ItemCardapio.MAXIMO_IMAGENS) {
             throw new BusinessException("Cada item pode ter no máximo 8 imagens.");
         }
-        imagens.forEach(caminho -> SupabaseArmazenamentoService.validateCaminhoOrThrow(caminho, pasta));
+        imagens.forEach(caminho -> CaminhoArquivoUtil.validateCaminhoOrThrow(caminho, pasta));
         if (dto.videoCaminho() != null && !dto.videoCaminho().isBlank()) {
-            SupabaseArmazenamentoService.validateCaminhoOrThrow(dto.videoCaminho(), pasta);
+            CaminhoArquivoUtil.validateCaminhoOrThrow(dto.videoCaminho(), pasta);
         }
 
         final List<UUID> categoriaIds = dto.categoriaIds() == null ? List.of() : dto.categoriaIds();

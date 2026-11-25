@@ -57,6 +57,21 @@ $env:JAVA_HOME="C:\Program Files\Java\jdk-21.0.7"   # o Maven do sistema aponta 
 mvn clean verify                                     # unitários + MetricasIT (Testcontainers: precisa do Docker)
 ```
 
+## Variáveis de ambiente
+
+Os padrões e a explicação de cada uma estão em [`.env.example`](.env.example).
+
+- **Banco:** `DB_USER`, `DB_PASSWORD`, `DB_HOST_PORT`
+- **Sessão e acesso:** `API_SECURITY_TOKEN_SECRET`, `API_SECURITY_TOKEN_EXPIRATION_HOURS`, `API_SECURITY_TOKEN_TIMEZONE`,
+  `API_SECURITY_COOKIE_SECURE`, `CORS_ALLOWED_ORIGINS`, `FRONT_SEGREDO`, `SWAGGER_HABILITADO`
+- **Super admin:** `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_SENHA`
+- **Storage:** `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_BUCKET`
+- **Vídeo:** `VIDEO_DURACAO_MAXIMA_SEGUNDOS`, `VIDEO_THREADS`, `VIDEO_URL_BASE`, `VIDEO_DIRETORIO`, `VIDEO_FFMPEG`, `VIDEO_FFPROBE`
+- **Produção:** `PROXY_NETWORK`, `REDIS_PASSWORD`, `REDIS_HOST_PORT`, `API_HOST_PORT`, `API_CPUS`, `API_MEM_LIMIT`, `DB_CPUS`,
+  `DB_MEM_LIMIT`
+- **Fora do compose:** `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`,
+  `SPRING_DATA_REDIS_HOST`, `SPRING_DATA_REDIS_PORT`, `SPRING_DATA_REDIS_PASSWORD`, `SPRING_DATA_REDIS_TYPE`
+
 ## Módulos
 
 | Rota | Quem | O quê |

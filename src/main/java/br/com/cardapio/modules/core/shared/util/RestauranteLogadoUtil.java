@@ -1,4 +1,4 @@
-package br.com.cardapio.modules.cardapio.shared.util;
+package br.com.cardapio.modules.core.shared.util;
 
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.exception.BusinessException;

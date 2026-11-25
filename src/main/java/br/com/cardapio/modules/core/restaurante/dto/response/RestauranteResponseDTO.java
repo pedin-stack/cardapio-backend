@@ -1,6 +1,6 @@
 package br.com.cardapio.modules.core.restaurante.dto.response;
 
-import br.com.cardapio.modules.cardapio.itemcardapio.dto.response.VideoResponseDTO;
+import br.com.cardapio.modules.core.video.dto.response.VideoResponseDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;

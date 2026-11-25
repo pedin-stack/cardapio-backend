@@ -5,7 +5,6 @@ import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;
 import br.com.cardapio.infrastructure.exception.BusinessException;
 import br.com.cardapio.infrastructure.exception.BusinessExceptionMessage;
 import br.com.cardapio.infrastructure.service.TokenService;
-import br.com.cardapio.infrastructure.service.UserDetailsServiceImpl;
 import br.com.cardapio.modules.core.autenticacao.dto.request.LoginRequestDTO;
 import br.com.cardapio.modules.core.autenticacao.dto.response.SessaoDTO;
 import br.com.cardapio.modules.core.usuario.model.Usuario;

@@ -1,4 +1,4 @@
-package br.com.cardapio.infrastructure.service;
+package br.com.cardapio.modules.core.autenticacao.service;
 
 import br.com.cardapio.config.cache.RedisCacheConfig;
 import br.com.cardapio.config.security.dto.UsuarioUserDetailsDTO;

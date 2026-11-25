@@ -1,7 +1,7 @@
 package br.com.cardapio.modules.core.restaurante.model;
 
 import br.com.cardapio.infrastructure.model.PersistenceEntity;
-import br.com.cardapio.modules.cardapio.itemcardapio.enums.StatusVideo;
+import br.com.cardapio.modules.core.video.enums.StatusVideo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
